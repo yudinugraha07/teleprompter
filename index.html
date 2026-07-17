@@ -214,6 +214,17 @@
         justify-content: center;
         font-size: 16px;
       }
+      #topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #record-btn.recording {
+        background: var(--accent);
+        color: #120705;
+        border-color: var(--accent);
+        animation: pulse 1.4s ease-in-out infinite;
+      }
 
       /* Bottom control dock */
       #dock {
@@ -476,9 +487,12 @@
 
     <div id="topbar">
       <span id="status-label">Ready</span>
-      <button class="icon-btn" id="fullscreen-btn" aria-label="Fullscreen">
-        ⛶
-      </button>
+      <div id="topbar-actions">
+        <button class="icon-btn" id="record-btn" aria-label="Record">⏺</button>
+        <button class="icon-btn" id="fullscreen-btn" aria-label="Fullscreen">
+          ⛶
+        </button>
+      </div>
     </div>
 
     <div id="dock">
@@ -636,6 +650,7 @@
         const statusLabel = document.getElementById("status-label");
         const fullscreenBtn = document.getElementById("fullscreen-btn");
         const stage = document.getElementById("stage");
+        const recordBtn = document.getElementById("record-btn");
 
         let playing = false;
         let scrollY = 0;
@@ -647,8 +662,19 @@
         let hideTimer = null;
         let countdownTimer = null;
         let needsCountdown = true;
+        let recording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
 
         // ---- Camera ----
+        function applyStream(stream) {
+          currentStream = stream;
+          camera.srcObject = stream;
+          camera.classList.remove("hidden");
+          cameraFallback.classList.add("hidden");
+          camera.style.transform =
+            facingMode === "user" ? "scaleX(-1)" : "none";
+        }
         async function startCamera() {
           if (currentStream) {
             currentStream.getTracks().forEach((t) => t.stop());
@@ -656,26 +682,114 @@
           try {
             const stream = await navigator.mediaDevices.getUserMedia({
               video: { facingMode: facingMode },
-              audio: false,
+              audio: true,
             });
-            currentStream = stream;
-            camera.srcObject = stream;
-            camera.classList.remove("hidden");
-            cameraFallback.classList.add("hidden");
-            camera.style.transform =
-              facingMode === "user" ? "scaleX(-1)" : "none";
+            applyStream(stream);
           } catch (err) {
-            camera.classList.add("hidden");
-            cameraFallback.classList.remove("hidden");
-            fallbackMsg.innerHTML =
-              "Camera cannot be accessed.<br>Check camera permissions in your browser, then tap ⟲ to try again.";
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: facingMode },
+                audio: false,
+              });
+              applyStream(stream);
+            } catch (err2) {
+              camera.classList.add("hidden");
+              cameraFallback.classList.remove("hidden");
+              fallbackMsg.innerHTML =
+                "Camera cannot be accessed.<br>Check camera permissions in your browser, then tap ⟲ to try again.";
+            }
           }
         }
         flipCamBtn.addEventListener("click", () => {
+          if (recording) return;
           facingMode = facingMode === "user" ? "environment" : "user";
           startCamera();
         });
         startCamera();
+
+        // ---- Recording ----
+        function pickMimeType() {
+          if (typeof MediaRecorder === "undefined") return "";
+          const candidates = [
+            "video/mp4;codecs=avc1,mp4a.40.2",
+            "video/mp4",
+            "video/webm;codecs=vp9,opus",
+            "video/webm;codecs=vp8,opus",
+            "video/webm",
+          ];
+          return (
+            candidates.find((type) => MediaRecorder.isTypeSupported(type)) ||
+            ""
+          );
+        }
+        function updateRecordUI() {
+          recordBtn.classList.toggle("recording", recording);
+          recordBtn.textContent = recording ? "■" : "⏺";
+          recordBtn.setAttribute(
+            "aria-label",
+            recording ? "Stop recording" : "Record",
+          );
+        }
+        function downloadRecording(blob) {
+          const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `teleprompter-${Date.now()}.${ext}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        function startRecording() {
+          if (!currentStream) {
+            alert("Camera access is required to record.");
+            return;
+          }
+          if (typeof MediaRecorder === "undefined") {
+            alert("Recording is not supported in this browser.");
+            return;
+          }
+          const mimeType = pickMimeType();
+          try {
+            mediaRecorder = mimeType
+              ? new MediaRecorder(currentStream, { mimeType })
+              : new MediaRecorder(currentStream);
+          } catch (err) {
+            alert("Recording is not supported in this browser.");
+            return;
+          }
+          recordedChunks = [];
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+          };
+          mediaRecorder.onstop = () => {
+            if (recordedChunks.length) {
+              const blob = new Blob(recordedChunks, {
+                type: mediaRecorder.mimeType || "video/webm",
+              });
+              downloadRecording(blob);
+            }
+            recordedChunks = [];
+          };
+          mediaRecorder.start();
+          recording = true;
+          updateRecordUI();
+        }
+        function stopRecording() {
+          if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+          }
+          recording = false;
+          updateRecordUI();
+        }
+        recordBtn.addEventListener("click", () => {
+          if (recording) {
+            stopRecording();
+          } else {
+            startRecording();
+          }
+        });
 
         // ---- Scroll animation ----
         function pxPerSecond() {
@@ -762,6 +876,7 @@
             : "translateY(0px)";
         }
         restartBtn.addEventListener("click", () => {
+          if (recording) stopRecording();
           needsCountdown = true;
           setPlaying(false);
           resetScroll();
@@ -828,6 +943,7 @@
 
         // ---- Editor ----
         function openEditor() {
+          if (recording) stopRecording();
           setPlaying(false);
           scriptInput.value =
             scriptText.textContent ===
