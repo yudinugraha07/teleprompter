@@ -646,6 +646,7 @@
         let controlsVisible = true;
         let hideTimer = null;
         let countdownTimer = null;
+        let needsCountdown = true;
 
         // ---- Camera ----
         async function startCamera() {
@@ -697,13 +698,20 @@
         }
         rafId = requestAnimationFrame(step);
 
+        function updatePlayLabel() {
+          playIcon.textContent = playing ? "❚❚" : "▶";
+          playText.textContent = playing
+            ? "Pause"
+            : needsCountdown
+              ? "Start"
+              : "Play";
+        }
         function setPlaying(state) {
           cancelCountdown();
           playing = state;
           lastTs = null;
           playBtn.classList.toggle("playing", playing);
-          playIcon.textContent = playing ? "❚❚" : "▶";
-          playText.textContent = playing ? "Pause" : "Start";
+          updatePlayLabel();
           tally.classList.toggle("live", playing);
           statusLabel.textContent = playing ? "Playing" : "Paused";
           if (playing) {
@@ -731,6 +739,7 @@
               countdown.textContent = count;
             } else {
               cancelCountdown();
+              needsCountdown = false;
               setPlaying(true);
             }
           }, 1000);
@@ -738,8 +747,10 @@
         playBtn.addEventListener("click", () => {
           if (playing) {
             setPlaying(false);
-          } else {
+          } else if (needsCountdown) {
             startCountdown();
+          } else {
+            setPlaying(true);
           }
         });
 
@@ -751,6 +762,7 @@
             : "translateY(0px)";
         }
         restartBtn.addEventListener("click", () => {
+          needsCountdown = true;
           setPlaying(false);
           resetScroll();
         });
@@ -831,7 +843,9 @@
             ? val
             : "Tap the pencil icon below to paste your script here.";
           editor.classList.remove("open");
+          needsCountdown = true;
           resetScroll();
+          updatePlayLabel();
         }
         editBtn.addEventListener("click", openEditor);
         doneBtn.addEventListener("click", closeEditor);
