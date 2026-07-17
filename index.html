@@ -151,6 +151,25 @@
         display: block;
       }
 
+      /* Start countdown */
+      #countdown {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        font-family: var(--sans);
+        font-weight: 700;
+        font-size: 120px;
+        color: var(--text);
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+      }
+      #countdown.show {
+        display: flex;
+      }
+
       /* Top bar (minimal, shows on tap) */
       #topbar {
         position: fixed;
@@ -412,6 +431,7 @@
 
     <div id="tally"></div>
     <div id="guide"></div>
+    <div id="countdown"></div>
 
     <div id="stage">
       <div id="track">
@@ -530,6 +550,7 @@
         const mirrorBtn = document.getElementById("mirror-btn");
         const guideBtn = document.getElementById("guide-btn");
         const guide = document.getElementById("guide");
+        const countdown = document.getElementById("countdown");
         const editBtn = document.getElementById("edit-btn");
         const editor = document.getElementById("editor");
         const doneBtn = document.getElementById("done-btn");
@@ -557,6 +578,7 @@
         let currentStream = null;
         let controlsVisible = true;
         let hideTimer = null;
+        let countdownTimer = null;
 
         // ---- Camera ----
         async function startCamera() {
@@ -609,6 +631,7 @@
         rafId = requestAnimationFrame(step);
 
         function setPlaying(state) {
+          cancelCountdown();
           playing = state;
           lastTs = null;
           playBtn.classList.toggle("playing", playing);
@@ -622,7 +645,36 @@
             showControls();
           }
         }
-        playBtn.addEventListener("click", () => setPlaying(!playing));
+        function cancelCountdown() {
+          if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+          }
+          countdown.classList.remove("show");
+          playBtn.disabled = false;
+        }
+        function startCountdown() {
+          let count = 3;
+          countdown.textContent = count;
+          countdown.classList.add("show");
+          playBtn.disabled = true;
+          countdownTimer = setInterval(() => {
+            count -= 1;
+            if (count > 0) {
+              countdown.textContent = count;
+            } else {
+              cancelCountdown();
+              setPlaying(true);
+            }
+          }, 1000);
+        }
+        playBtn.addEventListener("click", () => {
+          if (playing) {
+            setPlaying(false);
+          } else {
+            startCountdown();
+          }
+        });
 
         // reset scroll to top
         function resetScroll() {
