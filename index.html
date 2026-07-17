@@ -1,484 +1,702 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Teleprompter</title>
-<style>
-  :root{
-    --bg: #0a0a0a;
-    --panel: rgba(10,10,10,0.72);
-    --panel-solid: #121212;
-    --accent: #ff5c3d; /* tally-light red-orange */
-    --accent-dim: rgba(255,92,61,0.35);
-    --text: #f5f2ea;
-    --text-dim: #9a958c;
-    --line: rgba(245,242,234,0.12);
-    --mono: 'SF Mono', 'Courier New', monospace;
-    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{
-    margin:0; padding:0; height:100%; width:100%;
-    background:var(--bg); color:var(--text);
-    font-family:var(--sans);
-    overflow:hidden; overscroll-behavior:none;
-    position:fixed; inset:0;
-  }
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Teleprompter</title>
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --panel: rgba(10, 10, 10, 0.72);
+        --panel-solid: #121212;
+        --accent: #ff5c3d; /* tally-light red-orange */
+        --accent-dim: rgba(255, 92, 61, 0.35);
+        --text: #f5f2ea;
+        --text-dim: #9a958c;
+        --line: rgba(245, 242, 234, 0.12);
+        --mono: "SF Mono", "Courier New", monospace;
+        --sans:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        overflow: hidden;
+        overscroll-behavior: none;
+        position: fixed;
+        inset: 0;
+      }
 
-  #camera{
-    position:fixed; inset:0; width:100%; height:100%;
-    object-fit:cover; background:#000; z-index:0;
-  }
-  #camera.hidden{display:none;}
+      #camera {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #000;
+        z-index: 0;
+      }
+      #camera.hidden {
+        display: none;
+      }
 
-  #camera-fallback{
-    position:fixed; inset:0; z-index:0;
-    display:flex; align-items:center; justify-content:center;
-    flex-direction:column; gap:10px; padding:24px; text-align:center;
-    color:var(--text-dim); font-size:13px; font-family:var(--mono);
-  }
-  #camera-fallback.hidden{display:none;}
+      #camera-fallback {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 10px;
+        padding: 24px;
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 13px;
+        font-family: var(--mono);
+      }
+      #camera-fallback.hidden {
+        display: none;
+      }
 
-  /* Tally light */
-  #tally{
-    position:fixed; top:calc(env(safe-area-inset-top,0) + 14px); left:14px;
-    width:10px; height:10px; border-radius:50%;
-    background:var(--text-dim); z-index:30;
-    transition:background .2s;
-  }
-  #tally.live{
-    background:var(--accent);
-    box-shadow:0 0 10px 2px var(--accent-dim);
-    animation:pulse 1.4s ease-in-out infinite;
-  }
-  @keyframes pulse{
-    0%,100%{opacity:1;}
-    50%{opacity:.45;}
-  }
+      /* Tally light */
+      #tally {
+        position: fixed;
+        top: calc(env(safe-area-inset-top, 0) + 14px);
+        left: 14px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--text-dim);
+        z-index: 30;
+        transition: background 0.2s;
+      }
+      #tally.live {
+        background: var(--accent);
+        box-shadow: 0 0 10px 2px var(--accent-dim);
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.45;
+        }
+      }
 
-  /* Scroll text overlay */
-  #stage{
-    position:fixed; inset:0; z-index:10;
-    display:flex; align-items:flex-start; justify-content:center;
-    pointer-events:none;
-  }
-  #track{
-    width:100%;
-    padding:0 22px;
-    will-change:transform;
-    transform:translateY(0);
-  }
-  #track.mirror{ transform:scaleX(-1); }
-  .line-block{
-    background:var(--panel);
-    backdrop-filter:blur(2px);
-    padding:14px 18px;
-    border-radius:10px;
-  }
-  #script-text{
-    font-family:var(--sans);
-    font-weight:700;
-    line-height:1.5;
-    color:var(--text);
-    text-shadow:0 1px 3px rgba(0,0,0,0.6);
-    white-space:pre-wrap;
-    word-wrap:break-word;
-    margin:0;
-  }
+      /* Scroll text overlay */
+      #stage {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        pointer-events: none;
+      }
+      #track {
+        width: 100%;
+        padding: 0 22px;
+        will-change: transform;
+        transform: translateY(0);
+      }
+      #track.mirror {
+        transform: scaleX(-1);
+      }
+      .line-block {
+        background: var(--panel);
+        backdrop-filter: blur(2px);
+        padding: 14px 18px;
+        border-radius: 10px;
+      }
+      #script-text {
+        font-family: var(--sans);
+        font-weight: 700;
+        line-height: 1.5;
+        color: var(--text);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin: 0;
+      }
 
-  /* Center reading guide line */
-  #guide{
-    position:fixed; left:0; right:0; top:38%;
-    height:1px; background:var(--accent-dim); z-index:11;
-    pointer-events:none; display:none;
-  }
-  #guide.on{display:block;}
+      /* Center reading guide line */
+      #guide {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 38%;
+        height: 1px;
+        background: var(--accent-dim);
+        z-index: 11;
+        pointer-events: none;
+        display: none;
+      }
+      #guide.on {
+        display: block;
+      }
 
-  /* Top bar (minimal, shows on tap) */
-  #topbar{
-    position:fixed; top:0; left:0; right:0; z-index:40;
-    padding:calc(env(safe-area-inset-top,0) + 10px) 14px 10px 34px;
-    display:flex; align-items:center; justify-content:space-between;
-    background:linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
-    transition:opacity .25s, transform .25s;
-  }
-  #topbar.hide{opacity:0; transform:translateY(-100%); pointer-events:none;}
-  #status-label{
-    font-family:var(--mono); font-size:11px; letter-spacing:0.06em;
-    color:var(--text-dim); text-transform:uppercase;
-  }
-  .icon-btn{
-    background:rgba(18,18,18,0.6);
-    border:1px solid var(--line);
-    color:var(--text);
-    width:38px; height:38px; border-radius:10px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:16px;
-  }
+      /* Top bar (minimal, shows on tap) */
+      #topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 40;
+        padding: calc(env(safe-area-inset-top, 0) + 10px) 14px 10px 34px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.65),
+          transparent
+        );
+        transition:
+          opacity 0.25s,
+          transform 0.25s;
+      }
+      #topbar.hide {
+        opacity: 0;
+        transform: translateY(-100%);
+        pointer-events: none;
+      }
+      #status-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        color: var(--text-dim);
+        text-transform: uppercase;
+      }
+      .icon-btn {
+        background: rgba(18, 18, 18, 0.6);
+        border: 1px solid var(--line);
+        color: var(--text);
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      }
 
-  /* Bottom control dock */
-  #dock{
-    position:fixed; left:0; right:0; bottom:0; z-index:40;
-    padding:14px 14px calc(env(safe-area-inset-bottom,0) + 14px);
-    background:linear-gradient(to top, rgba(0,0,0,0.78), transparent);
-    display:flex; flex-direction:column; gap:10px;
-    transition:opacity .25s, transform .25s;
-  }
-  #dock.hide{opacity:0; transform:translateY(100%); pointer-events:none;}
+      /* Bottom control dock */
+      #dock {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        padding: 14px 14px calc(env(safe-area-inset-bottom, 0) + 14px);
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.78), transparent);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition:
+          opacity 0.25s,
+          transform 0.25s;
+      }
+      #dock.hide {
+        opacity: 0;
+        transform: translateY(100%);
+        pointer-events: none;
+      }
 
-  .row{display:flex; align-items:center; gap:10px;}
-  .slider-row{
-    background:var(--panel-solid);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:9px 14px;
-  }
-  .slider-label{
-    font-family:var(--mono); font-size:10px; letter-spacing:0.08em;
-    color:var(--text-dim); text-transform:uppercase;
-    display:flex; justify-content:space-between; margin-bottom:4px;
-  }
-  input[type=range]{
-    -webkit-appearance:none; width:100%; height:26px; background:transparent;
-  }
-  input[type=range]::-webkit-slider-runnable-track{
-    height:3px; background:var(--line); border-radius:2px;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
-    background:var(--accent); margin-top:-8.5px;
-    box-shadow:0 0 0 4px rgba(255,92,61,0.18);
-  }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .slider-row {
+        background: var(--panel-solid);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 9px 14px;
+      }
+      .slider-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 26px;
+        background: transparent;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 3px;
+        background: var(--line);
+        border-radius: 2px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-top: -8.5px;
+        box-shadow: 0 0 0 4px rgba(255, 92, 61, 0.18);
+      }
 
-  #main-controls{display:flex; gap:8px; align-items:center;}
-  #play-btn{
-    flex:1;
-    background:var(--accent);
-    color:#120705;
-    border:none;
-    border-radius:14px;
-    height:54px;
-    font-family:var(--sans);
-    font-weight:700;
-    font-size:16px;
-    letter-spacing:0.02em;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-  }
-  #play-btn.playing{
-    background:var(--panel-solid);
-    color:var(--accent);
-    border:1px solid var(--accent-dim);
-  }
-  .sq-btn{
-    width:54px; height:54px; border-radius:14px;
-    background:var(--panel-solid); border:1px solid var(--line);
-    color:var(--text); font-size:18px;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .sq-btn.active{ color:var(--accent); border-color:var(--accent-dim); }
+      #main-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      #play-btn {
+        flex: 1;
+        background: var(--accent);
+        color: #120705;
+        border: none;
+        border-radius: 14px;
+        height: 54px;
+        font-family: var(--sans);
+        font-weight: 700;
+        font-size: 16px;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      #play-btn.playing {
+        background: var(--panel-solid);
+        color: var(--accent);
+        border: 1px solid var(--accent-dim);
+      }
+      .sq-btn {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: var(--panel-solid);
+        border: 1px solid var(--line);
+        color: var(--text);
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .sq-btn.active {
+        color: var(--accent);
+        border-color: var(--accent-dim);
+      }
 
-  /* Editor sheet */
-  #editor{
-    position:fixed; inset:0; z-index:60;
-    background:var(--bg);
-    display:flex; flex-direction:column;
-    transform:translateY(100%);
-    transition:transform .28s ease;
-  }
-  #editor.open{ transform:translateY(0); }
-  #editor-header{
-    padding:calc(env(safe-area-inset-top,0) + 16px) 16px 12px;
-    display:flex; align-items:center; justify-content:space-between;
-    border-bottom:1px solid var(--line);
-  }
-  #editor-header h1{
-    font-size:15px; margin:0; font-weight:700; letter-spacing:0.01em;
-  }
-  #editor-header .sub{
-    font-family:var(--mono); font-size:10px; color:var(--text-dim);
-    letter-spacing:.06em; text-transform:uppercase; margin-top:2px;
-  }
-  #done-btn{
-    background:var(--accent); color:#120705; border:none;
-    padding:10px 18px; border-radius:10px; font-weight:700; font-size:14px;
-  }
-  #script-input{
-    flex:1; width:100%; background:var(--bg); color:var(--text);
-    border:none; outline:none; resize:none;
-    padding:18px 16px calc(env(safe-area-inset-bottom,0) + 18px);
-    font-family:var(--sans); font-size:19px; line-height:1.55;
-  }
-  #script-input::placeholder{ color:var(--text-dim); }
+      /* Editor sheet */
+      #editor {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        transform: translateY(100%);
+        transition: transform 0.28s ease;
+      }
+      #editor.open {
+        transform: translateY(0);
+      }
+      #editor-header {
+        padding: calc(env(safe-area-inset-top, 0) + 16px) 16px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+      }
+      #editor-header h1 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+      #editor-header .sub {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+      #done-btn {
+        background: var(--accent);
+        color: #120705;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      #script-input {
+        flex: 1;
+        width: 100%;
+        background: var(--bg);
+        color: var(--text);
+        border: none;
+        outline: none;
+        resize: none;
+        padding: 18px 16px calc(env(safe-area-inset-bottom, 0) + 18px);
+        font-family: var(--sans);
+        font-size: 19px;
+        line-height: 1.55;
+      }
+      #script-input::placeholder {
+        color: var(--text-dim);
+      }
 
-  /* Font size row inside editor footer */
-  #editor-footer{
-    display:flex; gap:10px; padding:10px 16px calc(env(safe-area-inset-bottom,0) + 12px);
-    border-top:1px solid var(--line);
-  }
-  #editor-footer .slider-row{flex:1;}
-</style>
-</head>
-<body>
-
-  <video id="camera" autoplay playsinline muted></video>
-  <div id="camera-fallback" class="hidden">
-    <div style="font-size:22px;">◎</div>
-    <div id="fallback-msg">Butuh izin kamera untuk menampilkan preview.<br>Tap tombol kamera di bawah untuk coba lagi.</div>
-  </div>
-
-  <div id="tally"></div>
-  <div id="guide"></div>
-
-  <div id="stage">
-    <div id="track">
-      <div class="line-block">
-        <p id="script-text">Tap ikon pensil di bawah untuk menempel naskahmu di sini.</p>
+      /* Font size row inside editor footer */
+      #editor-footer {
+        display: flex;
+        gap: 10px;
+        padding: 10px 16px calc(env(safe-area-inset-bottom, 0) + 12px);
+        border-top: 1px solid var(--line);
+      }
+      #editor-footer .slider-row {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="camera" autoplay playsinline muted></video>
+    <div id="camera-fallback" class="hidden">
+      <div style="font-size: 22px">◎</div>
+      <div id="fallback-msg">
+        Camera permission is needed to show the preview.<br />Tap the camera
+        button below to try again.
       </div>
     </div>
-  </div>
 
-  <div id="topbar">
-    <span id="status-label">Siap</span>
-    <button class="icon-btn" id="fullscreen-btn" aria-label="Fullscreen">⛶</button>
-  </div>
+    <div id="tally"></div>
+    <div id="guide"></div>
 
-  <div id="dock">
-    <div class="slider-row">
-      <div class="slider-label"><span>Kecepatan</span><span id="speed-val">1.0×</span></div>
-      <input type="range" id="speed-slider" min="1" max="20" value="6" step="1">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label"><span>Ukuran teks</span><span id="size-val">32px</span></div>
-      <input type="range" id="size-slider" min="18" max="64" value="32" step="1">
-    </div>
-    <div id="main-controls">
-      <button class="sq-btn" id="edit-btn" aria-label="Edit naskah">✎</button>
-      <button class="sq-btn" id="mirror-btn" aria-label="Mirror">⇋</button>
-      <button class="sq-btn" id="flip-cam-btn" aria-label="Ganti kamera">⟲</button>
-      <button id="play-btn"><span id="play-icon">▶</span><span id="play-text">Mulai</span></button>
-      <button class="sq-btn" id="guide-btn" aria-label="Garis panduan">—</button>
-    </div>
-  </div>
-
-  <div id="editor">
-    <div id="editor-header">
-      <div>
-        <h1>Naskah</h1>
-        <div class="sub">Tempel atau ketik teksmu</div>
+    <div id="stage">
+      <div id="track">
+        <div class="line-block">
+          <p id="script-text">
+            Tap the pencil icon below to paste your script here.
+          </p>
+        </div>
       </div>
-      <button id="done-btn">Selesai</button>
     </div>
-    <textarea id="script-input" placeholder="Tempel naskahmu di sini..."></textarea>
-    <div id="editor-footer">
+
+    <div id="topbar">
+      <span id="status-label">Ready</span>
+      <button class="icon-btn" id="fullscreen-btn" aria-label="Fullscreen">
+        ⛶
+      </button>
+    </div>
+
+    <div id="dock">
       <div class="slider-row">
-        <div class="slider-label"><span>Ukuran teks</span><span id="size-val-2">32px</span></div>
-        <input type="range" id="size-slider-2" min="18" max="64" value="32" step="1">
+        <div class="slider-label">
+          <span>Speed</span><span id="speed-val">1.0×</span>
+        </div>
+        <input
+          type="range"
+          id="speed-slider"
+          min="1"
+          max="20"
+          value="6"
+          step="1"
+        />
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">
+          <span>Text size</span><span id="size-val">32px</span>
+        </div>
+        <input
+          type="range"
+          id="size-slider"
+          min="18"
+          max="64"
+          value="32"
+          step="1"
+        />
+      </div>
+      <div id="main-controls">
+        <button class="sq-btn" id="edit-btn" aria-label="Edit script">✎</button>
+        <button class="sq-btn" id="mirror-btn" aria-label="Mirror">⇋</button>
+        <button class="sq-btn" id="flip-cam-btn" aria-label="Switch camera">
+          ⟲
+        </button>
+        <button id="play-btn">
+          <span id="play-icon">▶</span><span id="play-text">Start</span>
+        </button>
+        <button class="sq-btn" id="guide-btn" aria-label="Guide line">
+          —
+        </button>
       </div>
     </div>
-  </div>
 
-<script>
-(function(){
-  const track = document.getElementById('track');
-  const scriptText = document.getElementById('script-text');
-  const playBtn = document.getElementById('play-btn');
-  const playIcon = document.getElementById('play-icon');
-  const playText = document.getElementById('play-text');
-  const speedSlider = document.getElementById('speed-slider');
-  const speedVal = document.getElementById('speed-val');
-  const sizeSlider = document.getElementById('size-slider');
-  const sizeVal = document.getElementById('size-val');
-  const sizeSlider2 = document.getElementById('size-slider-2');
-  const sizeVal2 = document.getElementById('size-val-2');
-  const mirrorBtn = document.getElementById('mirror-btn');
-  const guideBtn = document.getElementById('guide-btn');
-  const guide = document.getElementById('guide');
-  const editBtn = document.getElementById('edit-btn');
-  const editor = document.getElementById('editor');
-  const doneBtn = document.getElementById('done-btn');
-  const scriptInput = document.getElementById('script-input');
-  const flipCamBtn = document.getElementById('flip-cam-btn');
-  const camera = document.getElementById('camera');
-  const cameraFallback = document.getElementById('camera-fallback');
-  const fallbackMsg = document.getElementById('fallback-msg');
-  const tally = document.getElementById('tally');
-  const topbar = document.getElementById('topbar');
-  const dock = document.getElementById('dock');
-  const statusLabel = document.getElementById('status-label');
-  const fullscreenBtn = document.getElementById('fullscreen-btn');
-  const stage = document.getElementById('stage');
+    <div id="editor">
+      <div id="editor-header">
+        <div>
+          <h1>Script</h1>
+          <div class="sub">Paste or type your text</div>
+        </div>
+        <button id="done-btn">Done</button>
+      </div>
+      <textarea
+        id="script-input"
+        placeholder="Paste your script here..."
+      ></textarea>
+      <div id="editor-footer">
+        <div class="slider-row">
+          <div class="slider-label">
+            <span>Text size</span><span id="size-val-2">32px</span>
+          </div>
+          <input
+            type="range"
+            id="size-slider-2"
+            min="18"
+            max="64"
+            value="32"
+            step="1"
+          />
+        </div>
+      </div>
+    </div>
 
-  let playing = false;
-  let scrollY = 0;
-  let rafId = null;
-  let lastTs = null;
-  let facingMode = 'user';
-  let currentStream = null;
-  let controlsVisible = true;
-  let hideTimer = null;
+    <script>
+      (function () {
+        const track = document.getElementById("track");
+        const scriptText = document.getElementById("script-text");
+        const playBtn = document.getElementById("play-btn");
+        const playIcon = document.getElementById("play-icon");
+        const playText = document.getElementById("play-text");
+        const speedSlider = document.getElementById("speed-slider");
+        const speedVal = document.getElementById("speed-val");
+        const sizeSlider = document.getElementById("size-slider");
+        const sizeVal = document.getElementById("size-val");
+        const sizeSlider2 = document.getElementById("size-slider-2");
+        const sizeVal2 = document.getElementById("size-val-2");
+        const mirrorBtn = document.getElementById("mirror-btn");
+        const guideBtn = document.getElementById("guide-btn");
+        const guide = document.getElementById("guide");
+        const editBtn = document.getElementById("edit-btn");
+        const editor = document.getElementById("editor");
+        const doneBtn = document.getElementById("done-btn");
+        const scriptInput = document.getElementById("script-input");
+        const flipCamBtn = document.getElementById("flip-cam-btn");
+        const camera = document.getElementById("camera");
+        const cameraFallback = document.getElementById("camera-fallback");
+        const fallbackMsg = document.getElementById("fallback-msg");
+        const tally = document.getElementById("tally");
+        const topbar = document.getElementById("topbar");
+        const dock = document.getElementById("dock");
+        const statusLabel = document.getElementById("status-label");
+        const fullscreenBtn = document.getElementById("fullscreen-btn");
+        const stage = document.getElementById("stage");
 
-  // ---- Camera ----
-  async function startCamera(){
-    if(currentStream){
-      currentStream.getTracks().forEach(t=>t.stop());
-    }
-    try{
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video:{ facingMode: facingMode },
-        audio:false
-      });
-      currentStream = stream;
-      camera.srcObject = stream;
-      camera.classList.remove('hidden');
-      cameraFallback.classList.add('hidden');
-      camera.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'none';
-    }catch(err){
-      camera.classList.add('hidden');
-      cameraFallback.classList.remove('hidden');
-      fallbackMsg.innerHTML = 'Kamera tidak dapat diakses.<br>Periksa izin kamera di browser, lalu tap ⟲ untuk coba lagi.';
-    }
-  }
-  flipCamBtn.addEventListener('click', ()=>{
-    facingMode = facingMode === 'user' ? 'environment' : 'user';
-    startCamera();
-  });
-  startCamera();
+        let playing = false;
+        let scrollY = 0;
+        let rafId = null;
+        let lastTs = null;
+        let facingMode = "user";
+        let currentStream = null;
+        let controlsVisible = true;
+        let hideTimer = null;
 
-  // ---- Scroll animation ----
-  function pxPerSecond(){
-    // slider 1-20 -> roughly 10-260 px/s
-    const v = parseInt(speedSlider.value,10);
-    return 8 + (v*v*0.6);
-  }
+        // ---- Camera ----
+        async function startCamera() {
+          if (currentStream) {
+            currentStream.getTracks().forEach((t) => t.stop());
+          }
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: facingMode },
+              audio: false,
+            });
+            currentStream = stream;
+            camera.srcObject = stream;
+            camera.classList.remove("hidden");
+            cameraFallback.classList.add("hidden");
+            camera.style.transform =
+              facingMode === "user" ? "scaleX(-1)" : "none";
+          } catch (err) {
+            camera.classList.add("hidden");
+            cameraFallback.classList.remove("hidden");
+            fallbackMsg.innerHTML =
+              "Camera cannot be accessed.<br>Check camera permissions in your browser, then tap ⟲ to try again.";
+          }
+        }
+        flipCamBtn.addEventListener("click", () => {
+          facingMode = facingMode === "user" ? "environment" : "user";
+          startCamera();
+        });
+        startCamera();
 
-  function step(ts){
-    if(!lastTs) lastTs = ts;
-    const dt = (ts - lastTs)/1000;
-    lastTs = ts;
-    if(playing){
-      scrollY -= pxPerSecond()*dt;
-      track.style.transform = mirrorOn
-        ? `scaleX(-1) translateY(${scrollY}px)`
-        : `translateY(${scrollY}px)`;
-    }
-    rafId = requestAnimationFrame(step);
-  }
-  rafId = requestAnimationFrame(step);
+        // ---- Scroll animation ----
+        function pxPerSecond() {
+          // slider 1-20 -> roughly 10-260 px/s
+          const v = parseInt(speedSlider.value, 10);
+          return 8 + v * v * 0.6;
+        }
 
-  function setPlaying(state){
-    playing = state;
-    lastTs = null;
-    playBtn.classList.toggle('playing', playing);
-    playIcon.textContent = playing ? '❚❚' : '▶';
-    playText.textContent = playing ? 'Jeda' : 'Mulai';
-    tally.classList.toggle('live', playing);
-    statusLabel.textContent = playing ? 'Berjalan' : 'Jeda';
-    if(playing){ scheduleHide(); } else { showControls(); }
-  }
-  playBtn.addEventListener('click', ()=> setPlaying(!playing));
+        function step(ts) {
+          if (!lastTs) lastTs = ts;
+          const dt = (ts - lastTs) / 1000;
+          lastTs = ts;
+          if (playing) {
+            scrollY -= pxPerSecond() * dt;
+            track.style.transform = mirrorOn
+              ? `scaleX(-1) translateY(${scrollY}px)`
+              : `translateY(${scrollY}px)`;
+          }
+          rafId = requestAnimationFrame(step);
+        }
+        rafId = requestAnimationFrame(step);
 
-  // reset scroll to top
-  function resetScroll(){
-    scrollY = 0;
-    track.style.transform = mirrorOn ? 'scaleX(-1) translateY(0px)' : 'translateY(0px)';
-  }
+        function setPlaying(state) {
+          playing = state;
+          lastTs = null;
+          playBtn.classList.toggle("playing", playing);
+          playIcon.textContent = playing ? "❚❚" : "▶";
+          playText.textContent = playing ? "Pause" : "Start";
+          tally.classList.toggle("live", playing);
+          statusLabel.textContent = playing ? "Playing" : "Paused";
+          if (playing) {
+            scheduleHide();
+          } else {
+            showControls();
+          }
+        }
+        playBtn.addEventListener("click", () => setPlaying(!playing));
 
-  // ---- Speed / size ----
-  speedSlider.addEventListener('input', ()=>{
-    speedVal.textContent = (parseInt(speedSlider.value,10)/6).toFixed(1)+'×';
-  });
-  function applySize(v){
-    scriptText.style.fontSize = v+'px';
-    sizeVal.textContent = v+'px';
-    sizeVal2.textContent = v+'px';
-    sizeSlider.value = v;
-    sizeSlider2.value = v;
-  }
-  sizeSlider.addEventListener('input', ()=> applySize(sizeSlider.value));
-  sizeSlider2.addEventListener('input', ()=> applySize(sizeSlider2.value));
-  applySize(32);
-  speedVal.textContent = (parseInt(speedSlider.value,10)/6).toFixed(1)+'×';
+        // reset scroll to top
+        function resetScroll() {
+          scrollY = 0;
+          track.style.transform = mirrorOn
+            ? "scaleX(-1) translateY(0px)"
+            : "translateY(0px)";
+        }
 
-  // ---- Mirror ----
-  let mirrorOn = false;
-  mirrorBtn.addEventListener('click', ()=>{
-    mirrorOn = !mirrorOn;
-    mirrorBtn.classList.toggle('active', mirrorOn);
-    track.style.transform = mirrorOn
-      ? `scaleX(-1) translateY(${scrollY}px)`
-      : `translateY(${scrollY}px)`;
-  });
+        // ---- Speed / size ----
+        speedSlider.addEventListener("input", () => {
+          speedVal.textContent =
+            (parseInt(speedSlider.value, 10) / 6).toFixed(1) + "×";
+        });
+        function applySize(v) {
+          scriptText.style.fontSize = v + "px";
+          sizeVal.textContent = v + "px";
+          sizeVal2.textContent = v + "px";
+          sizeSlider.value = v;
+          sizeSlider2.value = v;
+        }
+        sizeSlider.addEventListener("input", () => applySize(sizeSlider.value));
+        sizeSlider2.addEventListener("input", () =>
+          applySize(sizeSlider2.value),
+        );
+        applySize(32);
+        speedVal.textContent =
+          (parseInt(speedSlider.value, 10) / 6).toFixed(1) + "×";
 
-  // ---- Guide line ----
-  let guideOn = false;
-  guideBtn.addEventListener('click', ()=>{
-    guideOn = !guideOn;
-    guide.classList.toggle('on', guideOn);
-    guideBtn.classList.toggle('active', guideOn);
-  });
+        // ---- Mirror ----
+        let mirrorOn = false;
+        mirrorBtn.addEventListener("click", () => {
+          mirrorOn = !mirrorOn;
+          mirrorBtn.classList.toggle("active", mirrorOn);
+          track.style.transform = mirrorOn
+            ? `scaleX(-1) translateY(${scrollY}px)`
+            : `translateY(${scrollY}px)`;
+        });
 
-  // ---- Editor ----
-  function openEditor(){
-    setPlaying(false);
-    scriptInput.value = scriptText.textContent === 'Tap ikon pensil di bawah untuk menempel naskahmu di sini.'
-      ? '' : scriptText.textContent;
-    editor.classList.add('open');
-    setTimeout(()=>scriptInput.focus(), 300);
-  }
-  function closeEditor(){
-    const val = scriptInput.value.trim();
-    scriptText.textContent = val.length ? val : 'Tap ikon pensil di bawah untuk menempel naskahmu di sini.';
-    editor.classList.remove('open');
-    resetScroll();
-  }
-  editBtn.addEventListener('click', openEditor);
-  doneBtn.addEventListener('click', closeEditor);
+        // ---- Guide line ----
+        let guideOn = false;
+        guideBtn.addEventListener("click", () => {
+          guideOn = !guideOn;
+          guide.classList.toggle("on", guideOn);
+          guideBtn.classList.toggle("active", guideOn);
+        });
 
-  // ---- Auto-hide controls while playing ----
-  function showControls(){
-    controlsVisible = true;
-    topbar.classList.remove('hide');
-    dock.classList.remove('hide');
-    clearTimeout(hideTimer);
-    if(playing) scheduleHide();
-  }
-  function scheduleHide(){
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(()=>{
-      controlsVisible = false;
-      topbar.classList.add('hide');
-      dock.classList.add('hide');
-    }, 2600);
-  }
-  stage.addEventListener('click', ()=>{
-    if(controlsVisible && playing){
-      topbar.classList.add('hide');
-      dock.classList.add('hide');
-      controlsVisible = false;
-      clearTimeout(hideTimer);
-    } else {
-      showControls();
-    }
-  });
+        // ---- Editor ----
+        function openEditor() {
+          setPlaying(false);
+          scriptInput.value =
+            scriptText.textContent ===
+            "Tap the pencil icon below to paste your script here."
+              ? ""
+              : scriptText.textContent;
+          editor.classList.add("open");
+          setTimeout(() => scriptInput.focus(), 300);
+        }
+        function closeEditor() {
+          const val = scriptInput.value.trim();
+          scriptText.textContent = val.length
+            ? val
+            : "Tap the pencil icon below to paste your script here.";
+          editor.classList.remove("open");
+          resetScroll();
+        }
+        editBtn.addEventListener("click", openEditor);
+        doneBtn.addEventListener("click", closeEditor);
 
-  // ---- Fullscreen ----
-  fullscreenBtn.addEventListener('click', ()=>{
-    if(!document.fullscreenElement){
-      document.documentElement.requestFullscreen?.().catch(()=>{});
-    } else {
-      document.exitFullscreen?.();
-    }
-  });
+        // ---- Auto-hide controls while playing ----
+        function showControls() {
+          controlsVisible = true;
+          topbar.classList.remove("hide");
+          dock.classList.remove("hide");
+          clearTimeout(hideTimer);
+          if (playing) scheduleHide();
+        }
+        function scheduleHide() {
+          clearTimeout(hideTimer);
+          hideTimer = setTimeout(() => {
+            controlsVisible = false;
+            topbar.classList.add("hide");
+            dock.classList.add("hide");
+          }, 2600);
+        }
+        stage.addEventListener("click", () => {
+          if (controlsVisible && playing) {
+            topbar.classList.add("hide");
+            dock.classList.add("hide");
+            controlsVisible = false;
+            clearTimeout(hideTimer);
+          } else {
+            showControls();
+          }
+        });
 
-  // Reset scroll on double tap
-  let lastTap = 0;
-  document.addEventListener('touchend', ()=>{
-    const now = Date.now();
-    if(now - lastTap < 300){ resetScroll(); }
-    lastTap = now;
-  });
-})();
-</script>
-</body>
+        // ---- Fullscreen ----
+        fullscreenBtn.addEventListener("click", () => {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen?.().catch(() => {});
+          } else {
+            document.exitFullscreen?.();
+          }
+        });
+
+        // Reset scroll on double tap
+        let lastTap = 0;
+        document.addEventListener("touchend", () => {
+          const now = Date.now();
+          if (now - lastTap < 300) {
+            resetScroll();
+          }
+          lastTap = now;
+        });
+      })();
+    </script>
+  </body>
 </html>
