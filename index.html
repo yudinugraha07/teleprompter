@@ -905,6 +905,19 @@
           }
         });
 
+        // ---- Keyboard shortcuts ----
+        document.addEventListener("keydown", (e) => {
+          if (editor.classList.contains("open")) return;
+          const tag = document.activeElement.tagName;
+          if (tag === "INPUT" || tag === "TEXTAREA") return;
+          if (e.code === "Space") {
+            e.preventDefault();
+            playBtn.click();
+          } else if (e.key.toLowerCase() === "r") {
+            restartBtn.click();
+          }
+        });
+
         // Reset scroll on double tap
         let lastTap = 0;
         document.addEventListener("touchend", () => {
