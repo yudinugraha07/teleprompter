@@ -463,6 +463,9 @@
         <button class="sq-btn" id="flip-cam-btn" aria-label="Switch camera">
           ⟲
         </button>
+        <button class="sq-btn" id="restart-btn" aria-label="Restart">
+          ⏮
+        </button>
         <button id="play-btn">
           <span id="play-icon">▶</span><span id="play-text">Start</span>
         </button>
@@ -535,6 +538,7 @@
         const fileInput = document.getElementById("file-input");
         const loadError = document.getElementById("load-error");
         const flipCamBtn = document.getElementById("flip-cam-btn");
+        const restartBtn = document.getElementById("restart-btn");
         const camera = document.getElementById("camera");
         const cameraFallback = document.getElementById("camera-fallback");
         const fallbackMsg = document.getElementById("fallback-msg");
@@ -627,6 +631,10 @@
             ? "scaleX(-1) translateY(0px)"
             : "translateY(0px)";
         }
+        restartBtn.addEventListener("click", () => {
+          setPlaying(false);
+          resetScroll();
+        });
 
         // ---- Speed / size ----
         speedSlider.addEventListener("input", () => {
