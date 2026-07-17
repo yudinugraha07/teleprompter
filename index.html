@@ -347,6 +347,30 @@
         font-weight: 700;
         font-size: 14px;
       }
+      #editor-header .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #load-btn {
+        background: var(--panel-solid);
+        color: var(--text);
+        border: 1px solid var(--line);
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      #load-error {
+        display: none;
+        padding: 8px 16px 0;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--accent);
+      }
+      #load-error.show {
+        display: block;
+      }
       #script-input {
         flex: 1;
         width: 100%;
@@ -454,8 +478,18 @@
           <h1>Script</h1>
           <div class="sub">Paste or type your text</div>
         </div>
-        <button id="done-btn">Done</button>
+        <div class="header-actions">
+          <input
+            type="file"
+            id="file-input"
+            accept=".txt,.md,text/plain,text/markdown"
+            hidden
+          />
+          <button id="load-btn">Load file</button>
+          <button id="done-btn">Done</button>
+        </div>
       </div>
+      <div id="load-error"></div>
       <textarea
         id="script-input"
         placeholder="Paste your script here..."
@@ -497,6 +531,9 @@
         const editor = document.getElementById("editor");
         const doneBtn = document.getElementById("done-btn");
         const scriptInput = document.getElementById("script-input");
+        const loadBtn = document.getElementById("load-btn");
+        const fileInput = document.getElementById("file-input");
+        const loadError = document.getElementById("load-error");
         const flipCamBtn = document.getElementById("flip-cam-btn");
         const camera = document.getElementById("camera");
         const cameraFallback = document.getElementById("camera-fallback");
@@ -650,6 +687,39 @@
         }
         editBtn.addEventListener("click", openEditor);
         doneBtn.addEventListener("click", closeEditor);
+
+        // ---- Load from document (.txt / .md only) ----
+        function showLoadError(msg) {
+          loadError.textContent = msg;
+          loadError.classList.add("show");
+        }
+        function clearLoadError() {
+          loadError.textContent = "";
+          loadError.classList.remove("show");
+        }
+        loadBtn.addEventListener("click", () => {
+          clearLoadError();
+          fileInput.click();
+        });
+        fileInput.addEventListener("change", () => {
+          const file = fileInput.files[0];
+          fileInput.value = "";
+          if (!file) return;
+          const name = file.name.toLowerCase();
+          if (!name.endsWith(".txt") && !name.endsWith(".md")) {
+            showLoadError("Only .txt or .md files are supported.");
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+            clearLoadError();
+            scriptInput.value = reader.result;
+          };
+          reader.onerror = () => {
+            showLoadError("Could not read that file. Please try again.");
+          };
+          reader.readAsText(file);
+        });
 
         // ---- Auto-hide controls while playing ----
         function showControls() {
