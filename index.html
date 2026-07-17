@@ -258,8 +258,39 @@
         justify-content: space-between;
         margin-bottom: 4px;
       }
+      .value-wrap {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .value-input {
+        width: 34px;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--line);
+        color: var(--text-dim);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-align: right;
+        padding: 0 0 1px;
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+      .value-input::-webkit-outer-spin-button,
+      .value-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
+      }
+      .value-input:focus {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+        outline: none;
+      }
       input[type="range"] {
         -webkit-appearance: none;
+        appearance: none;
         width: 100%;
         height: 26px;
         background: transparent;
@@ -453,7 +484,19 @@
     <div id="dock">
       <div class="slider-row">
         <div class="slider-label">
-          <span>Speed</span><span id="speed-val">1.0×</span>
+          <span>Speed</span>
+          <span class="value-wrap">
+            <input
+              type="number"
+              class="value-input"
+              id="speed-input"
+              min="0.2"
+              max="3.3"
+              step="0.1"
+              value="1.0"
+              inputmode="decimal"
+            />×
+          </span>
         </div>
         <input
           type="range"
@@ -466,7 +509,19 @@
       </div>
       <div class="slider-row">
         <div class="slider-label">
-          <span>Text size</span><span id="size-val">32px</span>
+          <span>Text size</span>
+          <span class="value-wrap">
+            <input
+              type="number"
+              class="value-input"
+              id="size-input"
+              min="18"
+              max="64"
+              step="1"
+              value="32"
+              inputmode="numeric"
+            />px
+          </span>
         </div>
         <input
           type="range"
@@ -520,7 +575,19 @@
       <div id="editor-footer">
         <div class="slider-row">
           <div class="slider-label">
-            <span>Text size</span><span id="size-val-2">32px</span>
+            <span>Text size</span>
+            <span class="value-wrap">
+              <input
+                type="number"
+                class="value-input"
+                id="size-input-2"
+                min="18"
+                max="64"
+                step="1"
+                value="32"
+                inputmode="numeric"
+              />px
+            </span>
           </div>
           <input
             type="range"
@@ -542,11 +609,11 @@
         const playIcon = document.getElementById("play-icon");
         const playText = document.getElementById("play-text");
         const speedSlider = document.getElementById("speed-slider");
-        const speedVal = document.getElementById("speed-val");
+        const speedInput = document.getElementById("speed-input");
         const sizeSlider = document.getElementById("size-slider");
-        const sizeVal = document.getElementById("size-val");
+        const sizeInput = document.getElementById("size-input");
         const sizeSlider2 = document.getElementById("size-slider-2");
-        const sizeVal2 = document.getElementById("size-val-2");
+        const sizeInput2 = document.getElementById("size-input-2");
         const mirrorBtn = document.getElementById("mirror-btn");
         const guideBtn = document.getElementById("guide-btn");
         const guide = document.getElementById("guide");
@@ -689,24 +756,45 @@
         });
 
         // ---- Speed / size ----
-        speedSlider.addEventListener("input", () => {
-          speedVal.textContent =
-            (parseInt(speedSlider.value, 10) / 6).toFixed(1) + "×";
+        function applySpeed(raw) {
+          const v = Math.min(20, Math.max(1, Math.round(raw)));
+          speedSlider.value = v;
+          speedInput.value = (v / 6).toFixed(1);
+        }
+        speedSlider.addEventListener("input", () =>
+          applySpeed(speedSlider.value),
+        );
+        speedInput.addEventListener("change", () => {
+          const parsed = parseFloat(speedInput.value);
+          if (Number.isNaN(parsed)) {
+            applySpeed(speedSlider.value);
+            return;
+          }
+          applySpeed(parsed * 6);
         });
+
         function applySize(v) {
-          scriptText.style.fontSize = v + "px";
-          sizeVal.textContent = v + "px";
-          sizeVal2.textContent = v + "px";
-          sizeSlider.value = v;
-          sizeSlider2.value = v;
+          const size = Math.min(64, Math.max(18, Math.round(v)));
+          scriptText.style.fontSize = size + "px";
+          sizeInput.value = size;
+          sizeInput2.value = size;
+          sizeSlider.value = size;
+          sizeSlider2.value = size;
         }
         sizeSlider.addEventListener("input", () => applySize(sizeSlider.value));
         sizeSlider2.addEventListener("input", () =>
           applySize(sizeSlider2.value),
         );
+        sizeInput.addEventListener("change", () => {
+          const parsed = parseInt(sizeInput.value, 10);
+          applySize(Number.isNaN(parsed) ? sizeSlider.value : parsed);
+        });
+        sizeInput2.addEventListener("change", () => {
+          const parsed = parseInt(sizeInput2.value, 10);
+          applySize(Number.isNaN(parsed) ? sizeSlider2.value : parsed);
+        });
         applySize(32);
-        speedVal.textContent =
-          (parseInt(speedSlider.value, 10) / 6).toFixed(1) + "×";
+        applySpeed(speedSlider.value);
 
         // ---- Mirror ----
         let mirrorOn = false;
