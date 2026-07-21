@@ -321,6 +321,55 @@
         box-shadow: 0 0 0 4px rgba(255, 92, 61, 0.18);
       }
 
+      .stepper-btn {
+        display: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: var(--panel-solid);
+        border: 1px solid var(--line);
+        color: var(--text);
+        font-size: 17px;
+        line-height: 1;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+      }
+      .stepper-btn:active {
+        background: var(--accent-dim);
+        border-color: var(--accent);
+      }
+
+      /* Small-height landscape phones: swap sliders for +/- steppers
+         so the control dock doesn't crowd out the script preview. */
+      @media (orientation: landscape) and (max-height: 500px) {
+        #dock {
+          gap: 6px;
+          padding: 8px 14px calc(env(safe-area-inset-bottom, 0) + 8px);
+        }
+        .slider-row {
+          padding: 6px 10px;
+        }
+        .slider-label {
+          margin-bottom: 0;
+        }
+        .slider-row input[type="range"] {
+          display: none;
+        }
+        .stepper-btn {
+          display: flex;
+        }
+        .controls-row {
+          display: flex;
+          flex-direction: row;
+          gap: 6px;
+        }
+        .controls-row .slider-row {
+          flex: 1;
+          min-width: 0;
+        }
+      }
+
       #main-controls {
         display: flex;
         gap: 8px;
@@ -496,10 +545,19 @@
     </div>
 
     <div id="dock">
+      <div class="controls-row">
       <div class="slider-row">
         <div class="slider-label">
           <span>Speed</span>
           <span class="value-wrap">
+            <button
+              class="stepper-btn"
+              data-target="speed-input"
+              data-delta="-2"
+              aria-label="Decrease speed"
+            >
+              −
+            </button>
             <input
               type="number"
               class="value-input"
@@ -510,6 +568,14 @@
               value="1.0"
               inputmode="decimal"
             />×
+            <button
+              class="stepper-btn"
+              data-target="speed-input"
+              data-delta="2"
+              aria-label="Increase speed"
+            >
+              +
+            </button>
           </span>
         </div>
         <input
@@ -525,6 +591,14 @@
         <div class="slider-label">
           <span>Text size</span>
           <span class="value-wrap">
+            <button
+              class="stepper-btn"
+              data-target="size-input"
+              data-delta="-1"
+              aria-label="Decrease text size"
+            >
+              −
+            </button>
             <input
               type="number"
               class="value-input"
@@ -535,6 +609,14 @@
               value="32"
               inputmode="numeric"
             />px
+            <button
+              class="stepper-btn"
+              data-target="size-input"
+              data-delta="1"
+              aria-label="Increase text size"
+            >
+              +
+            </button>
           </span>
         </div>
         <input
@@ -545,6 +627,7 @@
           value="32"
           step="1"
         />
+      </div>
       </div>
       <div id="main-controls">
         <button class="sq-btn" id="edit-btn" aria-label="Edit script">✎</button>
@@ -591,6 +674,14 @@
           <div class="slider-label">
             <span>Text size</span>
             <span class="value-wrap">
+              <button
+                class="stepper-btn"
+                data-target="size-input-2"
+                data-delta="-1"
+                aria-label="Decrease text size"
+              >
+                −
+              </button>
               <input
                 type="number"
                 class="value-input"
@@ -601,6 +692,14 @@
                 value="32"
                 inputmode="numeric"
               />px
+              <button
+                class="stepper-btn"
+                data-target="size-input-2"
+                data-delta="1"
+                aria-label="Increase text size"
+              >
+                +
+              </button>
             </span>
           </div>
           <input
@@ -922,6 +1021,23 @@
         });
         applySize(32);
         applySpeed(speedSlider.value);
+
+        // ---- +/- steppers (compact landscape mode) ----
+        document.querySelectorAll(".stepper-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const input = document.getElementById(btn.dataset.target);
+            const step = parseFloat(input.step) || 1;
+            const delta = parseFloat(btn.dataset.delta) * step;
+            const min = parseFloat(input.min);
+            const max = parseFloat(input.max);
+            const next = Math.min(
+              max,
+              Math.max(min, parseFloat(input.value) + delta),
+            );
+            input.value = step < 1 ? next.toFixed(1) : next;
+            input.dispatchEvent(new Event("change"));
+          });
+        });
 
         // ---- Mirror ----
         let mirrorOn = false;
