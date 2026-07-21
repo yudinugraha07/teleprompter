@@ -657,7 +657,7 @@
           <input
             type="file"
             id="file-input"
-            accept=".txt,.md,text/plain,text/markdown"
+            accept=".txt,.md,.docx,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             hidden
           />
           <button id="load-btn">Load file</button>
@@ -1082,7 +1082,7 @@
         editBtn.addEventListener("click", openEditor);
         doneBtn.addEventListener("click", closeEditor);
 
-        // ---- Load from document (.txt / .md only) ----
+        // ---- Load from document (.txt / .md / .docx) ----
         function showLoadError(msg) {
           loadError.textContent = msg;
           loadError.classList.add("show");
@@ -1095,13 +1095,113 @@
           clearLoadError();
           fileInput.click();
         });
-        fileInput.addEventListener("change", () => {
+
+        // Minimal ZIP central-directory reader, just enough to pull a single
+        // entry (word/document.xml) out of a .docx package without a library.
+        async function readZipEntry(buffer, entryName) {
+          const view = new DataView(buffer);
+          const bytes = new Uint8Array(buffer);
+          const maxBack = Math.min(bytes.length, 65557);
+          let eocdOffset = -1;
+          for (let i = bytes.length - 22; i >= bytes.length - maxBack; i--) {
+            if (i < 0) break;
+            if (view.getUint32(i, true) === 0x06054b50) {
+              eocdOffset = i;
+              break;
+            }
+          }
+          if (eocdOffset === -1) throw new Error("Not a valid .docx file.");
+          const cdCount = view.getUint16(eocdOffset + 10, true);
+          let offset = view.getUint32(eocdOffset + 16, true);
+          let match = null;
+          for (let i = 0; i < cdCount; i++) {
+            if (view.getUint32(offset, true) !== 0x02014b50) break;
+            const compMethod = view.getUint16(offset + 10, true);
+            const compSize = view.getUint32(offset + 20, true);
+            const nameLen = view.getUint16(offset + 28, true);
+            const extraLen = view.getUint16(offset + 30, true);
+            const commentLen = view.getUint16(offset + 32, true);
+            const localHeaderOffset = view.getUint32(offset + 42, true);
+            const name = new TextDecoder("utf-8").decode(
+              bytes.subarray(offset + 46, offset + 46 + nameLen),
+            );
+            if (name === entryName) {
+              match = { compMethod, compSize, localHeaderOffset };
+              break;
+            }
+            offset += 46 + nameLen + extraLen + commentLen;
+          }
+          if (!match) return null;
+          const lh = match.localHeaderOffset;
+          const lhNameLen = view.getUint16(lh + 26, true);
+          const lhExtraLen = view.getUint16(lh + 28, true);
+          const dataStart = lh + 30 + lhNameLen + lhExtraLen;
+          const compData = bytes.subarray(dataStart, dataStart + match.compSize);
+          if (match.compMethod === 0) return compData;
+          if (match.compMethod !== 8) {
+            throw new Error("Unsupported compression in .docx file.");
+          }
+          if (typeof DecompressionStream === "undefined") {
+            throw new Error(
+              "This browser can't read .docx files. Please export as .txt instead.",
+            );
+          }
+          const stream = new Blob([compData])
+            .stream()
+            .pipeThrough(new DecompressionStream("deflate-raw"));
+          return new Uint8Array(await new Response(stream).arrayBuffer());
+        }
+
+        async function extractDocxText(file) {
+          const buffer = await file.arrayBuffer();
+          const xmlBytes = await readZipEntry(buffer, "word/document.xml");
+          if (!xmlBytes) throw new Error("That .docx file looks corrupted.");
+          const xmlText = new TextDecoder("utf-8").decode(xmlBytes);
+          const xmlDoc = new DOMParser().parseFromString(
+            xmlText,
+            "application/xml",
+          );
+          const ns =
+            "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+          const paragraphs = xmlDoc.getElementsByTagNameNS(ns, "p");
+          const lines = [];
+          const collect = (node) => {
+            let text = "";
+            for (const child of node.childNodes) {
+              if (child.nodeType !== 1) continue;
+              if (child.namespaceURI === ns && child.localName === "t") {
+                text += child.textContent;
+              } else if (child.namespaceURI === ns && child.localName === "tab") {
+                text += "\t";
+              } else if (child.namespaceURI === ns && child.localName === "br") {
+                text += "\n";
+              } else {
+                text += collect(child);
+              }
+            }
+            return text;
+          };
+          for (const p of paragraphs) lines.push(collect(p));
+          return lines.join("\n\n");
+        }
+
+        fileInput.addEventListener("change", async () => {
           const file = fileInput.files[0];
           fileInput.value = "";
           if (!file) return;
           const name = file.name.toLowerCase();
+          if (name.endsWith(".docx")) {
+            try {
+              const text = await extractDocxText(file);
+              clearLoadError();
+              scriptInput.value = text;
+            } catch (err) {
+              showLoadError(err.message || "Could not read that .docx file.");
+            }
+            return;
+          }
           if (!name.endsWith(".txt") && !name.endsWith(".md")) {
-            showLoadError("Only .txt or .md files are supported.");
+            showLoadError("Only .txt, .md, or .docx files are supported.");
             return;
           }
           const reader = new FileReader();

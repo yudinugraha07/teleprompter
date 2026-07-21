@@ -14,6 +14,7 @@ or webcam without extra hardware.
 - Center guide line for eye-level reading
 - Fullscreen mode
 - Tap-to-edit script sheet; controls auto-hide while playing
+- Load script from a `.txt`, `.md`, or `.docx` file
 - Double-tap to reset scroll to the top
 - Keyboard shortcuts: Space to play/pause, R to restart
 
