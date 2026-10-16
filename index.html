@@ -7,20 +7,76 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>Teleprompter</title>
+    <meta name="theme-color" content="#05081F" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      /* Picaloid Studios design tokens, copied from the brand kit
+         (brand-identity/brand/web/tokens.css). Only what this app uses. */
       :root {
-        --bg: #0a0a0a;
-        --panel: rgba(10, 10, 10, 0.72);
-        --panel-solid: #121212;
-        --accent: #ff5c3d; /* tally-light red-orange */
-        --accent-dim: rgba(255, 92, 61, 0.35);
-        --text: #f5f2ea;
-        --text-dim: #9a958c;
-        --line: rgba(245, 242, 234, 0.12);
-        --mono: "SF Mono", "Courier New", monospace;
-        --sans:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --navy-25: #f8f8fa;
+        --navy-50: #f1f1f5;
+        --navy-100: #e8e8ef;
+        --navy-200: #dadae6;
+        --navy-400: #9698b7;
+        --navy-500: #6f709c;
+        --navy-600: #505288;
+        --navy-700: #373976;
+        --navy-900: #161960;
+        --navy-950: #0b0f3a;
+        --navy-1000: #05081f;
+        --blue-100: #d7f1fc;
+        --blue-500: #02a6ed;
+        --blue-700: #0975bc;
+        --white: #ffffff;
+        --error: #c0283e;
+        --error-bg: #f9e9ec;
+
+        --color-text-on-dark-muted: rgba(255, 255, 255, 0.72);
+        --color-border: var(--navy-200);
+        --color-border-subtle: var(--navy-100);
+        --color-border-on-dark: rgba(255, 255, 255, 0.16);
+        --focus-ring: 0 0 0 2px var(--white), 0 0 0 4px var(--navy-900);
+        --focus-ring-on-dark: 0 0 0 2px var(--navy-950), 0 0 0 4px var(--blue-500);
+
+        --font-heading: "Inter Tight", system-ui, sans-serif;
+        --font-body: "Inter", system-ui, sans-serif;
+
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 24px;
+        --space-6: 32px;
+
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-full: 999px;
+
+        --duration-fast: 120ms;
+        --duration-base: 200ms;
+        --duration-slow: 320ms;
+        --ease: cubic-bezier(0.2, 0, 0, 1);
+
+        /* App roles: the prompter sits on the camera feed (dark),
+           the script editor is a light sheet. */
+        --panel: rgba(11, 15, 58, 0.72); /* navy-950 */
+        --scrim: rgba(5, 8, 31, 0.8); /* navy-1000 */
       }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0ms !important;
+          animation-duration: 0ms !important;
+        }
+      }
+
       * {
         box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
@@ -31,13 +87,140 @@
         padding: 0;
         height: 100%;
         width: 100%;
-        background: var(--bg);
-        color: var(--text);
-        font-family: var(--sans);
+        background: var(--navy-1000);
+        color: var(--white);
+        font: 400 16px/1.6 var(--font-body);
+        -webkit-font-smoothing: antialiased;
         overflow: hidden;
         overscroll-behavior: none;
         position: fixed;
         inset: 0;
+      }
+      button {
+        font-family: inherit;
+      }
+
+      .icon {
+        width: 20px;
+        height: 20px;
+        flex: none;
+      }
+
+      /* Buttons (brand kit .btn variants) */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        height: 44px;
+        padding: 0 var(--space-5);
+        border: 1px solid transparent;
+        border-radius: var(--radius-md);
+        font: 600 15px/1 var(--font-body);
+        white-space: nowrap;
+        cursor: pointer;
+        transition:
+          background-color var(--duration-fast) var(--ease),
+          border-color var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .btn .icon {
+        width: 18px;
+        height: 18px;
+      }
+      .btn--sm {
+        height: 36px;
+        padding: 0 var(--space-4);
+        font-size: 14px;
+      }
+      .btn--lg {
+        height: 52px;
+        padding: 0 var(--space-6);
+        font-size: 16px;
+      }
+      .btn--primary {
+        background: var(--navy-900);
+        color: var(--white);
+      }
+      .btn--primary:hover {
+        background: var(--navy-700);
+      }
+      .btn--secondary {
+        background: transparent;
+        color: var(--navy-900);
+        border-color: var(--navy-900);
+      }
+      .btn--secondary:hover {
+        background: var(--navy-50);
+      }
+      .btn--accent {
+        background: var(--blue-500);
+        color: var(--navy-900);
+      }
+      .btn--accent:hover {
+        background: color-mix(in srgb, var(--blue-500) 78%, var(--white));
+      }
+      .btn--outline-light {
+        background: var(--panel);
+        color: var(--white);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+      .btn--outline-light:hover {
+        border-color: var(--white);
+      }
+      .btn:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+      }
+      .on-dark .btn:focus-visible {
+        box-shadow: var(--focus-ring-on-dark);
+      }
+      .on-dark .btn:disabled {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.4);
+        border-color: transparent;
+        cursor: not-allowed;
+      }
+
+      /* Square icon control over the camera feed */
+      .ctrl {
+        width: 52px;
+        height: 52px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        background: var(--panel);
+        border: 1px solid var(--color-border-on-dark);
+        border-radius: var(--radius-md);
+        color: var(--white);
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transition:
+          background-color var(--duration-fast) var(--ease),
+          border-color var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .ctrl:hover {
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+      .ctrl:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring-on-dark);
+      }
+      .ctrl.active {
+        color: var(--blue-500);
+        border-color: var(--blue-500);
+      }
+      .ctrl--sm {
+        width: 36px;
+        height: 36px;
+      }
+      .ctrl--sm .icon {
+        width: 18px;
+        height: 18px;
       }
 
       #camera {
@@ -46,7 +229,7 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-        background: #000;
+        background: var(--navy-1000);
         z-index: 0;
       }
       #camera.hidden {
@@ -61,33 +244,51 @@
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        gap: 10px;
-        padding: 24px;
+        gap: var(--space-4);
+        padding: var(--space-5);
         text-align: center;
-        color: var(--text-dim);
-        font-size: 13px;
-        font-family: var(--mono);
+        background: var(--navy-1000);
+        color: var(--color-text-on-dark-muted);
+        font-size: 14px;
+        line-height: 1.5;
       }
       #camera-fallback.hidden {
         display: none;
+      }
+      .fallback-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--blue-500);
+        display: grid;
+        place-items: center;
+      }
+      .fallback-icon .icon {
+        width: 24px;
+        height: 24px;
+      }
+      #fallback-msg {
+        margin: 0;
+        max-width: 320px;
       }
 
       /* Tally light */
       #tally {
         position: fixed;
-        top: calc(env(safe-area-inset-top, 0) + 14px);
-        left: 14px;
+        top: calc(env(safe-area-inset-top, 0px) + 25px);
+        left: var(--space-4);
         width: 10px;
         height: 10px;
-        border-radius: 50%;
-        background: var(--text-dim);
+        border-radius: var(--radius-full);
+        background: var(--navy-400);
         z-index: 30;
-        transition: background 0.2s;
+        transition: background-color var(--duration-base) var(--ease);
       }
       #tally.live {
-        background: var(--accent);
-        box-shadow: 0 0 10px 2px var(--accent-dim);
-        animation: pulse 1.4s ease-in-out infinite;
+        background: var(--blue-500);
+        box-shadow: 0 0 0 4px rgba(2, 166, 237, 0.24);
+        animation: pulse 1.6s var(--ease) infinite;
       }
       @keyframes pulse {
         0%,
@@ -95,7 +296,7 @@
           opacity: 1;
         }
         50% {
-          opacity: 0.45;
+          opacity: 0.5;
         }
       }
 
@@ -111,7 +312,7 @@
       }
       #track {
         width: 100%;
-        padding: 0 22px;
+        padding: calc(env(safe-area-inset-top, 0px) + 64px) var(--space-4) 0;
         will-change: transform;
         transform: translateY(0);
       }
@@ -121,15 +322,16 @@
       .line-block {
         background: var(--panel);
         backdrop-filter: blur(2px);
-        padding: 14px 18px;
-        border-radius: 10px;
+        -webkit-backdrop-filter: blur(2px);
+        padding: var(--space-4) var(--space-5);
+        border-radius: var(--radius-lg);
       }
       #script-text {
-        font-family: var(--sans);
-        font-weight: 700;
+        font-family: var(--font-body);
+        font-weight: 600;
         line-height: 1.5;
-        color: var(--text);
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+        color: var(--white);
+        text-shadow: 0 1px 3px rgba(5, 8, 31, 0.6);
         white-space: pre-wrap;
         word-wrap: break-word;
         margin: 0;
@@ -141,8 +343,9 @@
         left: 0;
         right: 0;
         top: 38%;
-        height: 1px;
-        background: var(--accent-dim);
+        height: 2px;
+        background: var(--blue-500);
+        opacity: 0.6;
         z-index: 11;
         pointer-events: none;
         display: none;
@@ -160,11 +363,10 @@
         align-items: center;
         justify-content: center;
         pointer-events: none;
-        font-family: var(--sans);
-        font-weight: 700;
-        font-size: 120px;
-        color: var(--text);
-        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+        font: 800 128px/1 var(--font-heading);
+        letter-spacing: -0.03em;
+        color: var(--white);
+        text-shadow: 0 2px 16px rgba(5, 8, 31, 0.6);
       }
       #countdown.show {
         display: flex;
@@ -177,18 +379,15 @@
         left: 0;
         right: 0;
         z-index: 40;
-        padding: calc(env(safe-area-inset-top, 0) + 10px) 14px 10px 34px;
+        padding: calc(env(safe-area-inset-top, 0px) + var(--space-3))
+          var(--space-4) var(--space-3) 40px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: linear-gradient(
-          to bottom,
-          rgba(0, 0, 0, 0.65),
-          transparent
-        );
+        background: linear-gradient(to bottom, var(--scrim), transparent);
         transition:
-          opacity 0.25s,
-          transform 0.25s;
+          opacity var(--duration-base) var(--ease),
+          transform var(--duration-base) var(--ease);
       }
       #topbar.hide {
         opacity: 0;
@@ -196,34 +395,38 @@
         pointer-events: none;
       }
       #status-label {
-        font-family: var(--mono);
-        font-size: 11px;
-        letter-spacing: 0.06em;
-        color: var(--text-dim);
+        font: 600 12px/1.4 var(--font-body);
+        letter-spacing: 0.14em;
         text-transform: uppercase;
+        color: var(--color-text-on-dark-muted);
       }
-      .icon-btn {
-        background: rgba(18, 18, 18, 0.6);
-        border: 1px solid var(--line);
-        color: var(--text);
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
+      #status-label.live {
+        color: var(--blue-500);
       }
       #topbar-actions {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--space-2);
+      }
+      #record-btn .icon {
+        width: 16px;
+        height: 16px;
+      }
+      #record-btn .icon-stop,
+      #record-btn.recording .icon-record {
+        display: none;
+      }
+      #record-btn.recording .icon-stop {
+        display: block;
+      }
+      #record-btn .icon-record {
+        color: var(--error);
       }
       #record-btn.recording {
-        background: var(--accent);
-        color: #120705;
-        border-color: var(--accent);
-        animation: pulse 1.4s ease-in-out infinite;
+        background: var(--error);
+        border-color: var(--error);
+        color: var(--white);
+        animation: pulse 1.6s var(--ease) infinite;
       }
 
       /* Bottom control dock */
@@ -233,14 +436,15 @@
         right: 0;
         bottom: 0;
         z-index: 40;
-        padding: 14px 14px calc(env(safe-area-inset-bottom, 0) + 14px);
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.78), transparent);
+        padding: var(--space-6) var(--space-4)
+          calc(env(safe-area-inset-bottom, 0px) + var(--space-4));
+        background: linear-gradient(to top, var(--scrim) 60%, transparent);
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: var(--space-2);
         transition:
-          opacity 0.25s,
-          transform 0.25s;
+          opacity var(--duration-base) var(--ease),
+          transform var(--duration-base) var(--ease);
       }
       #dock.hide {
         opacity: 0;
@@ -248,45 +452,60 @@
         pointer-events: none;
       }
 
-      .row {
+      .controls-row {
         display: flex;
-        align-items: center;
-        gap: 10px;
+        gap: var(--space-2);
       }
-      .slider-row {
-        background: var(--panel-solid);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 9px 14px;
+      .stepper-row {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+        padding: var(--space-2);
+        background: var(--panel);
+        border: 1px solid var(--color-border-on-dark);
+        border-radius: var(--radius-lg);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
-      .slider-label {
-        font-family: var(--mono);
-        font-size: 10px;
-        letter-spacing: 0.08em;
-        color: var(--text-dim);
+      .stepper-label {
+        padding: 0 var(--space-1);
+        font: 600 12px/1.4 var(--font-body);
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 4px;
+        color: var(--color-text-on-dark-muted);
       }
-      .value-wrap {
+      .stepper {
         display: flex;
         align-items: center;
+        gap: var(--space-1);
+      }
+      .stepper-value {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
         gap: 2px;
+        font: 600 13px/1 var(--font-body);
+        color: var(--color-text-on-dark-muted);
       }
       .value-input {
         width: 34px;
+        padding: 0 0 2px;
         background: transparent;
         border: none;
-        border-bottom: 1px solid var(--line);
-        color: var(--text-dim);
-        font-family: var(--mono);
-        font-size: 10px;
-        letter-spacing: 0.08em;
+        border-bottom: 1px solid transparent;
+        border-radius: 0;
+        color: var(--white);
+        font: 700 20px/1.2 var(--font-heading);
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
         text-align: right;
-        padding: 0 0 1px;
         -moz-appearance: textfield;
         appearance: textfield;
+        transition: border-color var(--duration-fast) var(--ease);
       }
       .value-input::-webkit-outer-spin-button,
       .value-input::-webkit-inner-spin-button {
@@ -294,230 +513,269 @@
         appearance: none;
         margin: 0;
       }
+      .value-input:hover {
+        border-bottom-color: var(--color-border-on-dark);
+      }
       .value-input:focus {
-        color: var(--text);
-        border-bottom-color: var(--accent);
+        border-bottom-color: var(--blue-500);
         outline: none;
-      }
-      input[type="range"] {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 26px;
-        background: transparent;
-      }
-      input[type="range"]::-webkit-slider-runnable-track {
-        height: 3px;
-        background: var(--line);
-        border-radius: 2px;
-      }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: var(--accent);
-        margin-top: -8.5px;
-        box-shadow: 0 0 0 4px rgba(255, 92, 61, 0.18);
       }
 
       .stepper-btn {
-        display: none;
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: var(--panel-solid);
-        border: 1px solid var(--line);
-        color: var(--text);
-        font-size: 17px;
-        line-height: 1;
+        width: 44px;
+        height: 44px;
+        flex: none;
+        display: flex;
         align-items: center;
         justify-content: center;
-        flex: none;
+        padding: 0;
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--color-border-on-dark);
+        color: var(--white);
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        transition:
+          background-color var(--duration-fast) var(--ease),
+          border-color var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .stepper-btn:hover {
+        border-color: rgba(255, 255, 255, 0.4);
       }
       .stepper-btn:active {
-        background: var(--accent-dim);
-        border-color: var(--accent);
+        border-color: var(--blue-500);
+        color: var(--blue-500);
+      }
+      .stepper-btn:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring-on-dark);
+      }
+      .stepper-btn:disabled {
+        background: transparent;
+        border-color: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.4);
+        cursor: not-allowed;
       }
 
-      /* Small-height landscape phones: swap sliders for +/- steppers
-         so the control dock doesn't crowd out the script preview. */
+      /* Label beside the buttons instead of above them */
+      .stepper-row--inline {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
+      }
+      .stepper-row--inline .stepper-value {
+        flex: none;
+        width: 64px;
+      }
+
+      /* Small-height landscape phones: keep the dock to two short rows
+         so it doesn't crowd out the script preview. */
       @media (orientation: landscape) and (max-height: 500px) {
         #dock {
-          gap: 6px;
-          padding: 8px 14px calc(env(safe-area-inset-bottom, 0) + 8px);
+          gap: var(--space-2);
+          padding: var(--space-4) var(--space-4)
+            calc(env(safe-area-inset-bottom, 0px) + var(--space-2));
         }
-        .slider-row {
-          padding: 6px 10px;
+        .controls-row .stepper-row {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-3);
+          padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
         }
-        .slider-label {
-          margin-bottom: 0;
-        }
-        .slider-row input[type="range"] {
-          display: none;
+        .controls-row .stepper-value {
+          flex: none;
+          width: 64px;
         }
         .stepper-btn {
-          display: flex;
+          width: 36px;
+          height: 36px;
         }
-        .controls-row {
-          display: flex;
-          flex-direction: row;
-          gap: 6px;
+        .ctrl,
+        #play-btn {
+          height: 44px;
         }
-        .controls-row .slider-row {
-          flex: 1;
-          min-width: 0;
+        .ctrl:not(.ctrl--sm) {
+          width: 44px;
         }
       }
 
       #main-controls {
         display: flex;
-        gap: 8px;
+        gap: var(--space-2);
         align-items: center;
       }
       #play-btn {
         flex: 1;
-        background: var(--accent);
-        color: #120705;
-        border: none;
-        border-radius: 14px;
-        height: 54px;
-        font-family: var(--sans);
-        font-weight: 700;
-        font-size: 16px;
-        letter-spacing: 0.02em;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
+        min-width: 0;
+        padding: 0 var(--space-4);
       }
-      #play-btn.playing {
-        background: var(--panel-solid);
-        color: var(--accent);
-        border: 1px solid var(--accent-dim);
+      #play-btn .icon-pause,
+      #play-btn.playing .icon-play {
+        display: none;
       }
-      .sq-btn {
-        width: 54px;
-        height: 54px;
-        border-radius: 14px;
-        background: var(--panel-solid);
-        border: 1px solid var(--line);
-        color: var(--text);
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      #play-btn.playing .icon-pause {
+        display: block;
       }
-      .sq-btn.active {
-        color: var(--accent);
-        border-color: var(--accent-dim);
+      #play-btn .icon {
+        fill: currentColor;
+      }
+      @media (max-width: 479px) {
+        .ctrl:not(.ctrl--sm) {
+          width: 44px;
+          height: 44px;
+        }
+        #play-btn {
+          height: 44px;
+          padding: 0 var(--space-3);
+          font-size: 15px;
+        }
       }
 
-      /* Editor sheet */
+      /* Editor sheet (light surface) */
       #editor {
         position: fixed;
         inset: 0;
         z-index: 60;
-        background: var(--bg);
+        background: var(--white);
+        color: var(--navy-900);
         display: flex;
         flex-direction: column;
         transform: translateY(100%);
-        transition: transform 0.28s ease;
+        transition: transform var(--duration-slow) var(--ease);
       }
       #editor.open {
         transform: translateY(0);
       }
       #editor-header {
-        padding: calc(env(safe-area-inset-top, 0) + 16px) 16px 12px;
+        padding: calc(env(safe-area-inset-top, 0px) + var(--space-4))
+          var(--space-4) var(--space-4);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid var(--line);
+        gap: var(--space-4);
+        border-bottom: 1px solid var(--color-border-subtle);
+      }
+      .eyebrow {
+        font: 600 12px/1.4 var(--font-body);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--blue-700);
       }
       #editor-header h1 {
-        font-size: 15px;
-        margin: 0;
-        font-weight: 700;
-        letter-spacing: 0.01em;
+        margin: 2px 0 0;
+        font: 600 20px/1.3 var(--font-heading);
+        letter-spacing: -0.01em;
       }
       #editor-header .sub {
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--text-dim);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-top: 2px;
-      }
-      #done-btn {
-        background: var(--accent);
-        color: #120705;
-        border: none;
-        padding: 10px 18px;
-        border-radius: 10px;
-        font-weight: 700;
+        margin: 2px 0 0;
         font-size: 14px;
+        line-height: 1.5;
+        color: var(--navy-600);
       }
       #editor-header .header-actions {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--space-2);
       }
-      #load-btn {
-        background: var(--panel-solid);
-        color: var(--text);
-        border: 1px solid var(--line);
-        padding: 10px 14px;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 13px;
-      }
-      #load-error {
+      .notice {
         display: none;
-        padding: 8px 16px 0;
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--accent);
+        gap: var(--space-3);
+        margin: var(--space-3) var(--space-4) 0;
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+        background: var(--error-bg);
+        color: var(--navy-900);
+        font-size: 14px;
+        line-height: 1.5;
       }
-      #load-error.show {
-        display: block;
+      .notice .icon {
+        color: var(--error);
+        margin-top: 1px;
+      }
+      .notice.show {
+        display: flex;
       }
       #script-input {
         flex: 1;
         width: 100%;
-        background: var(--bg);
-        color: var(--text);
+        background: var(--white);
+        color: var(--navy-900);
         border: none;
         outline: none;
         resize: none;
-        padding: 18px 16px calc(env(safe-area-inset-bottom, 0) + 18px);
-        font-family: var(--sans);
-        font-size: 19px;
-        line-height: 1.55;
+        padding: var(--space-5) var(--space-4);
+        font: 400 18px/1.6 var(--font-body);
       }
       #script-input::placeholder {
-        color: var(--text-dim);
+        color: var(--navy-500);
       }
 
       /* Font size row inside editor footer */
       #editor-footer {
         display: flex;
-        gap: 10px;
-        padding: 10px 16px calc(env(safe-area-inset-bottom, 0) + 12px);
-        border-top: 1px solid var(--line);
+        padding: var(--space-3) var(--space-4)
+          calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+        border-top: 1px solid var(--color-border-subtle);
+        background: var(--navy-25);
       }
-      #editor-footer .slider-row {
-        flex: 1;
+      #editor-footer .stepper-row {
+        background: var(--white);
+        border-color: var(--color-border);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+      #editor-footer .stepper-label,
+      #editor-footer .stepper-value {
+        color: var(--navy-600);
+      }
+      #editor-footer .value-input {
+        color: var(--navy-900);
+      }
+      #editor-footer .value-input:hover {
+        border-bottom-color: var(--color-border);
+      }
+      #editor-footer .value-input:focus {
+        border-bottom-color: var(--navy-900);
+      }
+      #editor-footer .stepper-btn {
+        background: var(--white);
+        color: var(--navy-900);
+        border-color: var(--color-border);
+      }
+      #editor-footer .stepper-btn:hover {
+        border-color: var(--navy-400);
+      }
+      #editor-footer .stepper-btn:active {
+        background: var(--navy-50);
+        border-color: var(--navy-900);
+        color: var(--navy-900);
+      }
+      #editor-footer .stepper-btn:focus-visible {
+        box-shadow: var(--focus-ring);
+      }
+      #editor-footer .stepper-btn:disabled {
+        background: var(--navy-50);
+        border-color: var(--navy-100);
+        color: var(--navy-400);
       }
     </style>
   </head>
   <body>
     <video id="camera" autoplay playsinline muted></video>
     <div id="camera-fallback" class="hidden">
-      <div style="font-size: 22px">◎</div>
-      <div id="fallback-msg">
-        Camera permission is needed to show the preview.<br />Tap the camera
-        button below to try again.
+      <div class="fallback-icon">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/></svg>
       </div>
+      <p id="fallback-msg">
+        Camera permission is needed to show the preview.<br />Tap the switch
+        camera button below to try again.
+      </p>
     </div>
 
     <div id="tally"></div>
@@ -527,131 +785,123 @@
     <div id="stage">
       <div id="track">
         <div class="line-block">
-          <p id="script-text">
-            Tap the pencil icon below to paste your script here.
-          </p>
+          <p id="script-text">Tap the pencil icon below to paste your script here.</p>
         </div>
       </div>
     </div>
 
-    <div id="topbar">
+    <div id="topbar" class="on-dark">
       <span id="status-label">Ready</span>
       <div id="topbar-actions">
-        <button class="icon-btn" id="record-btn" aria-label="Record">⏺</button>
-        <button class="icon-btn" id="fullscreen-btn" aria-label="Fullscreen">
-          ⛶
+        <button class="ctrl ctrl--sm" id="record-btn" aria-label="Record">
+          <svg class="icon icon-record" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>
+          <svg class="icon icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
+        </button>
+        <button class="ctrl ctrl--sm" id="fullscreen-btn" aria-label="Fullscreen">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
       </div>
     </div>
 
-    <div id="dock">
+    <div id="dock" class="on-dark">
       <div class="controls-row">
-      <div class="slider-row">
-        <div class="slider-label">
-          <span>Speed</span>
-          <span class="value-wrap">
+        <div class="stepper-row">
+          <label class="stepper-label" for="speed-input">Speed</label>
+          <div class="stepper">
             <button
               class="stepper-btn"
-              data-target="speed-input"
-              data-delta="-2"
-              aria-label="Decrease speed"
+              data-control="speed"
+              data-direction="-1"
+              aria-label="Slower"
             >
-              −
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <input
-              type="number"
-              class="value-input"
-              id="speed-input"
-              min="0.2"
-              max="3.3"
-              step="0.1"
-              value="1.0"
-              inputmode="decimal"
-            />×
+            <span class="stepper-value">
+              <input
+                type="number"
+                class="value-input"
+                id="speed-input"
+                min="0.2"
+                max="3.3"
+                step="0.1"
+                value="1.0"
+                inputmode="decimal"
+              />×
+            </span>
             <button
               class="stepper-btn"
-              data-target="speed-input"
-              data-delta="2"
-              aria-label="Increase speed"
+              data-control="speed"
+              data-direction="1"
+              aria-label="Faster"
             >
-              +
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-          </span>
+          </div>
         </div>
-        <input
-          type="range"
-          id="speed-slider"
-          min="1"
-          max="20"
-          value="6"
-          step="1"
-        />
-      </div>
-      <div class="slider-row">
-        <div class="slider-label">
-          <span>Text size</span>
-          <span class="value-wrap">
+        <div class="stepper-row">
+          <label class="stepper-label" for="size-input">Text size</label>
+          <div class="stepper">
             <button
               class="stepper-btn"
-              data-target="size-input"
-              data-delta="-1"
-              aria-label="Decrease text size"
+              data-control="size"
+              data-direction="-1"
+              aria-label="Smaller text"
             >
-              −
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <input
-              type="number"
-              class="value-input"
-              id="size-input"
-              min="18"
-              max="64"
-              step="1"
-              value="32"
-              inputmode="numeric"
-            />px
+            <span class="stepper-value">
+              <input
+                type="number"
+                class="value-input"
+                id="size-input"
+                min="18"
+                max="64"
+                step="1"
+                value="32"
+                inputmode="numeric"
+              />px
+            </span>
             <button
               class="stepper-btn"
-              data-target="size-input"
-              data-delta="1"
-              aria-label="Increase text size"
+              data-control="size"
+              data-direction="1"
+              aria-label="Larger text"
             >
-              +
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-          </span>
+          </div>
         </div>
-        <input
-          type="range"
-          id="size-slider"
-          min="18"
-          max="64"
-          value="32"
-          step="1"
-        />
-      </div>
       </div>
       <div id="main-controls">
-        <button class="sq-btn" id="edit-btn" aria-label="Edit script">✎</button>
-        <button class="sq-btn" id="mirror-btn" aria-label="Mirror">⇋</button>
-        <button class="sq-btn" id="flip-cam-btn" aria-label="Switch camera">
-          ⟲
+        <button class="ctrl" id="edit-btn" aria-label="Edit script">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         </button>
-        <button class="sq-btn" id="restart-btn" aria-label="Restart">
-          ⏮
+        <button class="ctrl" id="mirror-btn" aria-label="Mirror">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="8" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="16"/><line x1="12" y1="20" x2="12" y2="22"/></svg>
         </button>
-        <button id="play-btn">
-          <span id="play-icon">▶</span><span id="play-text">Start</span>
+        <button class="ctrl" id="flip-cam-btn" aria-label="Switch camera">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/><path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/><circle cx="12" cy="12" r="3"/><polyline points="18 22 15 19 18 16"/><polyline points="6 2 9 5 6 8"/></svg>
         </button>
-        <button class="sq-btn" id="guide-btn" aria-label="Guide line">
-          —
+        <button class="ctrl" id="restart-btn" aria-label="Restart">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+        <button class="btn btn--accent btn--lg" id="play-btn">
+          <svg class="icon icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+          <svg class="icon icon-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          <span id="play-text">Start</span>
+        </button>
+        <button class="ctrl" id="guide-btn" aria-label="Guide line">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="2" y1="12" x2="22" y2="12"/><line x1="7" y1="6" x2="17" y2="6"/><line x1="7" y1="18" x2="17" y2="18"/></svg>
         </button>
       </div>
     </div>
 
-    <div id="editor">
+    <div id="editor" role="dialog" aria-labelledby="editor-title">
       <div id="editor-header">
         <div>
-          <h1>Script</h1>
-          <div class="sub">Paste or type your text</div>
+          <div class="eyebrow">Teleprompter</div>
+          <h1 id="editor-title">Script</h1>
+          <p class="sub">Paste or type your text</p>
         </div>
         <div class="header-actions">
           <input
@@ -660,28 +910,35 @@
             accept=".txt,.md,.docx,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             hidden
           />
-          <button id="load-btn">Load file</button>
-          <button id="done-btn">Done</button>
+          <button class="btn btn--secondary btn--sm" id="load-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Load file
+          </button>
+          <button class="btn btn--primary btn--sm" id="done-btn">Done</button>
         </div>
       </div>
-      <div id="load-error"></div>
+      <div id="load-error" class="notice" role="alert">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="load-error-text"></span>
+      </div>
       <textarea
         id="script-input"
         placeholder="Paste your script here..."
+        aria-label="Script"
       ></textarea>
       <div id="editor-footer">
-        <div class="slider-row">
-          <div class="slider-label">
-            <span>Text size</span>
-            <span class="value-wrap">
-              <button
-                class="stepper-btn"
-                data-target="size-input-2"
-                data-delta="-1"
-                aria-label="Decrease text size"
-              >
-                −
-              </button>
+        <div class="stepper-row stepper-row--inline">
+          <label class="stepper-label" for="size-input-2">Text size</label>
+          <div class="stepper">
+            <button
+              class="stepper-btn"
+              data-control="size"
+              data-direction="-1"
+              aria-label="Smaller text"
+            >
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <span class="stepper-value">
               <input
                 type="number"
                 class="value-input"
@@ -692,24 +949,16 @@
                 value="32"
                 inputmode="numeric"
               />px
-              <button
-                class="stepper-btn"
-                data-target="size-input-2"
-                data-delta="1"
-                aria-label="Increase text size"
-              >
-                +
-              </button>
             </span>
+            <button
+              class="stepper-btn"
+              data-control="size"
+              data-direction="1"
+              aria-label="Larger text"
+            >
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
           </div>
-          <input
-            type="range"
-            id="size-slider-2"
-            min="18"
-            max="64"
-            value="32"
-            step="1"
-          />
         </div>
       </div>
     </div>
@@ -719,13 +968,9 @@
         const track = document.getElementById("track");
         const scriptText = document.getElementById("script-text");
         const playBtn = document.getElementById("play-btn");
-        const playIcon = document.getElementById("play-icon");
         const playText = document.getElementById("play-text");
-        const speedSlider = document.getElementById("speed-slider");
         const speedInput = document.getElementById("speed-input");
-        const sizeSlider = document.getElementById("size-slider");
         const sizeInput = document.getElementById("size-input");
-        const sizeSlider2 = document.getElementById("size-slider-2");
         const sizeInput2 = document.getElementById("size-input-2");
         const mirrorBtn = document.getElementById("mirror-btn");
         const guideBtn = document.getElementById("guide-btn");
@@ -738,6 +983,7 @@
         const loadBtn = document.getElementById("load-btn");
         const fileInput = document.getElementById("file-input");
         const loadError = document.getElementById("load-error");
+        const loadErrorText = document.getElementById("load-error-text");
         const flipCamBtn = document.getElementById("flip-cam-btn");
         const restartBtn = document.getElementById("restart-btn");
         const camera = document.getElementById("camera");
@@ -801,7 +1047,7 @@
               camera.classList.add("hidden");
               cameraFallback.classList.remove("hidden");
               fallbackMsg.innerHTML =
-                "Camera cannot be accessed.<br>Check camera permissions in your browser, then tap ⟲ to try again.";
+                "Camera cannot be accessed.<br>Check camera permissions in your browser, then tap the switch camera button to try again.";
             }
           }
         }
@@ -829,7 +1075,6 @@
         }
         function updateRecordUI() {
           recordBtn.classList.toggle("recording", recording);
-          recordBtn.textContent = recording ? "■" : "⏺";
           recordBtn.setAttribute(
             "aria-label",
             recording ? "Stop recording" : "Record",
@@ -898,9 +1143,8 @@
 
         // ---- Scroll animation ----
         function pxPerSecond() {
-          // slider 1-20 -> roughly 10-260 px/s
-          const v = parseInt(speedSlider.value, 10);
-          return 8 + v * v * 0.6;
+          // speed level 1-20 -> roughly 10-250 px/s
+          return 8 + speedLevel * speedLevel * 0.6;
         }
 
         function step(ts) {
@@ -918,7 +1162,6 @@
         rafId = requestAnimationFrame(step);
 
         function updatePlayLabel() {
-          playIcon.textContent = playing ? "❚❚" : "▶";
           playText.textContent = playing
             ? "Pause"
             : needsCountdown
@@ -932,6 +1175,7 @@
           playBtn.classList.toggle("playing", playing);
           updatePlayLabel();
           tally.classList.toggle("live", playing);
+          statusLabel.classList.toggle("live", playing);
           statusLabel.textContent = playing ? "Playing" : "Paused";
           if (playing) {
             scheduleHide();
@@ -988,60 +1232,86 @@
         });
 
         // ---- Speed / size ----
-        function applySpeed(raw) {
-          const v = Math.min(20, Math.max(1, Math.round(raw)));
-          speedSlider.value = v;
-          speedInput.value = (v / 6).toFixed(1);
+        // Speed is stored as a level 1-20 and shown as level / 6 (6 = 1.0x).
+        const SPEED_MIN = 1;
+        const SPEED_MAX = 20;
+        const SIZE_MIN = 18;
+        const SIZE_MAX = 64;
+        const SIZE_STEP = 2;
+        let speedLevel = 6;
+        let textSize = 32;
+
+        function updateStepperLimits() {
+          document.querySelectorAll(".stepper-btn").forEach((btn) => {
+            const down = btn.dataset.direction === "-1";
+            const atLimit =
+              btn.dataset.control === "speed"
+                ? speedLevel === (down ? SPEED_MIN : SPEED_MAX)
+                : textSize === (down ? SIZE_MIN : SIZE_MAX);
+            btn.disabled = atLimit;
+          });
         }
-        speedSlider.addEventListener("input", () =>
-          applySpeed(speedSlider.value),
-        );
+        function applySpeed(level) {
+          speedLevel = Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(level)));
+          speedInput.value = (speedLevel / 6).toFixed(1);
+          updateStepperLimits();
+        }
         speedInput.addEventListener("change", () => {
           const parsed = parseFloat(speedInput.value);
-          if (Number.isNaN(parsed)) {
-            applySpeed(speedSlider.value);
-            return;
-          }
-          applySpeed(parsed * 6);
+          applySpeed(Number.isNaN(parsed) ? speedLevel : parsed * 6);
         });
 
         function applySize(v) {
-          const size = Math.min(64, Math.max(18, Math.round(v)));
-          scriptText.style.fontSize = size + "px";
-          sizeInput.value = size;
-          sizeInput2.value = size;
-          sizeSlider.value = size;
-          sizeSlider2.value = size;
+          textSize = Math.min(SIZE_MAX, Math.max(SIZE_MIN, Math.round(v)));
+          scriptText.style.fontSize = textSize + "px";
+          sizeInput.value = textSize;
+          sizeInput2.value = textSize;
+          updateStepperLimits();
         }
-        sizeSlider.addEventListener("input", () => applySize(sizeSlider.value));
-        sizeSlider2.addEventListener("input", () =>
-          applySize(sizeSlider2.value),
-        );
-        sizeInput.addEventListener("change", () => {
-          const parsed = parseInt(sizeInput.value, 10);
-          applySize(Number.isNaN(parsed) ? sizeSlider.value : parsed);
+        [sizeInput, sizeInput2].forEach((input) => {
+          input.addEventListener("change", () => {
+            const parsed = parseInt(input.value, 10);
+            applySize(Number.isNaN(parsed) ? textSize : parsed);
+          });
         });
-        sizeInput2.addEventListener("change", () => {
-          const parsed = parseInt(sizeInput2.value, 10);
-          applySize(Number.isNaN(parsed) ? sizeSlider2.value : parsed);
-        });
-        applySize(32);
-        applySpeed(speedSlider.value);
+        applySize(textSize);
+        applySpeed(speedLevel);
 
-        // ---- +/- steppers (compact landscape mode) ----
+        // ---- +/- buttons (press and hold to repeat) ----
+        function nudge(control, direction) {
+          if (control === "speed") {
+            applySpeed(speedLevel + direction);
+          } else {
+            applySize(textSize + direction * SIZE_STEP);
+          }
+        }
         document.querySelectorAll(".stepper-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const input = document.getElementById(btn.dataset.target);
-            const step = parseFloat(input.step) || 1;
-            const delta = parseFloat(btn.dataset.delta) * step;
-            const min = parseFloat(input.min);
-            const max = parseFloat(input.max);
-            const next = Math.min(
-              max,
-              Math.max(min, parseFloat(input.value) + delta),
-            );
-            input.value = step < 1 ? next.toFixed(1) : next;
-            input.dispatchEvent(new Event("change"));
+          const { control } = btn.dataset;
+          const direction = parseInt(btn.dataset.direction, 10);
+          let holdTimer = null;
+          const stopHold = () => {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+          };
+          const repeat = () => {
+            nudge(control, direction);
+            if (btn.disabled) return stopHold();
+            holdTimer = setTimeout(repeat, 80);
+          };
+          btn.addEventListener("pointerdown", (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            nudge(control, direction);
+            holdTimer = setTimeout(repeat, 400);
+          });
+          ["pointerup", "pointerleave", "pointercancel"].forEach((type) =>
+            btn.addEventListener(type, stopHold),
+          );
+          btn.addEventListener("contextmenu", (e) => e.preventDefault());
+          // Keyboard activation (Enter / Space) arrives as a click with detail 0;
+          // pointer presses are already handled on pointerdown.
+          btn.addEventListener("click", (e) => {
+            if (e.detail === 0) nudge(control, direction);
           });
         });
 
@@ -1090,11 +1360,11 @@
 
         // ---- Load from document (.txt / .md / .docx) ----
         function showLoadError(msg) {
-          loadError.textContent = msg;
+          loadErrorText.textContent = msg;
           loadError.classList.add("show");
         }
         function clearLoadError() {
-          loadError.textContent = "";
+          loadErrorText.textContent = "";
           loadError.classList.remove("show");
         }
         loadBtn.addEventListener("click", () => {
@@ -1237,6 +1507,9 @@
             dock.classList.add("hide");
           }, 2600);
         }
+        dock.addEventListener("pointerdown", () => {
+          if (playing) scheduleHide();
+        });
         stage.addEventListener("click", () => {
           if (controlsVisible && playing) {
             topbar.classList.add("hide");
@@ -1272,7 +1545,8 @@
 
         // Reset scroll on double tap
         let lastTap = 0;
-        document.addEventListener("touchend", () => {
+        document.addEventListener("touchend", (e) => {
+          if (e.target.closest("#dock, #topbar, #editor")) return;
           const now = Date.now();
           if (now - lastTap < 300) {
             resetScroll();
