@@ -6,8 +6,26 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <title>Teleprompter</title>
+    <title>Picaloid Teleprompter</title>
+    <meta
+      name="description"
+      content="A free teleprompter that runs in your browser. Your script scrolls over the camera preview so you can record with just a phone or webcam."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://teleprompter.picaloid.com/" />
+    <meta property="og:title" content="Picaloid Teleprompter" />
+    <meta
+      property="og:description"
+      content="A free teleprompter that runs in your browser. Record with just a phone or webcam, no install needed."
+    />
+    <meta property="og:site_name" content="Picaloid Studios" />
     <meta name="theme-color" content="#05081F" />
+    <!-- Picaloid symbol, from brand-identity/brand/favicon/favicon.svg, inlined to keep this a single file. -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 198 198'%3E%3Cpath d='M38.53,89.20 A80.00,80.00 0 1 1 108.80,159.47 A12,12 0 0 0 96.31,166.86 A50.00,50.00 0 1 1 31.14,101.69 A12,12 0 0 0 38.53,89.20 Z' fill='%23161960' fill-rule='evenodd'/%3E%3Cpath d='M78.00,80.00 a40.00,40.00 0 1,0 80.00,0 a40.00,40.00 0 1,0 -80.00,0 ZM25.00,148.00 a25.00,25.00 0 1,0 50.00,0 a25.00,25.00 0 1,0 -50.00,0 Z' fill='%2302A6ED'/%3E%3C/svg%3E"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -719,6 +737,9 @@
       /* Font size row inside editor footer */
       #editor-footer {
         display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
         padding: var(--space-3) var(--space-4)
           calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
         border-top: 1px solid var(--color-border-subtle);
@@ -758,6 +779,36 @@
       }
       #editor-footer .stepper-btn:focus-visible {
         box-shadow: var(--focus-ring);
+      }
+      .credit {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--navy-600);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .credit strong {
+        font-weight: 600;
+        color: var(--navy-900);
+      }
+      .credit:hover strong {
+        color: var(--blue-700);
+      }
+      .credit:focus-visible {
+        outline: none;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--focus-ring);
+      }
+      /* Phones: the stepper needs the full row, so the credit goes underneath. */
+      @media (max-width: 479px) {
+        #editor-footer {
+          flex-direction: column;
+          align-items: stretch;
+          gap: var(--space-2);
+        }
+        .credit {
+          align-self: center;
+        }
       }
       #editor-footer .stepper-btn:disabled {
         background: var(--navy-50);
@@ -960,6 +1011,9 @@
             </button>
           </div>
         </div>
+        <a class="credit" href="https://picaloid.com/" target="_blank" rel="noopener">
+          by <strong>Picaloid Studios</strong>
+        </a>
       </div>
     </div>
 
